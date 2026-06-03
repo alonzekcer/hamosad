@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes)",
+      "Bash(mkdir -p /Users/alonzekcer/Documents/hamosad/src/app/public/\\\\[token\\\\])",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3001/login)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(open http://localhost:3001)",
+      "Read(//private/tmp/**)",
+      "Bash(npm run dev > /tmp/hamosad-dev.log 2>&1 & *)",
+      "Bash(open http://localhost:3001/login)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ],
+    "additionalDirectories": [
+      "/Users/alonzekcer/Documents/hamosad/src/app/public",
+      "/private/tmp"
+    ]
+  }
+}

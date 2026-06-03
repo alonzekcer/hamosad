@@ -1,0 +1,31 @@
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: 'המוסד - לוח פעילויות',
+  description: 'ניהול פעילויות חופש לנוער',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#f97316',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="he" dir="rtl" className="h-full" style={{ colorScheme: 'light' }}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body className="h-full" style={{ fontFamily: "'Heebo', sans-serif" }}>
+        <div className="h-full flex flex-col">
+          {children}
+        </div>
+      </body>
+    </html>
+  );
+}
