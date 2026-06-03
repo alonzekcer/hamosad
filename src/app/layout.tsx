@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'המוסד - לוח פעילויות',
-  description: 'ניהול פעילויות חופש לנוער',
+  description: 'תוכנית פעילויות חופש גדול - מועדון מוסד',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
