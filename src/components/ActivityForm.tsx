@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ACTIVITY_COLORS, HEBREW_MONTHS } from '@/lib/constants';
+import { ACTIVITY_COLORS, ACTIVITY_COLOR_LABELS, HEBREW_MONTHS } from '@/lib/constants';
 import type { Activity, Group } from '@/types';
 
 interface ActivityFormProps {
@@ -14,7 +14,7 @@ interface ActivityFormProps {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-function getTimeStr(iso: string): string {
+function getTimeStr(iso: string) {
   const d = new Date(iso);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -26,77 +26,46 @@ function combineDateTime(baseIso: string, timeStr: string): string {
   return base.toISOString();
 }
 
-interface TimePickerProps {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}
-
-function TimePicker({ label, value, onChange }: TimePickerProps) {
+function CompactTimePicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const [h, m] = value.split(':').map(Number);
 
-  function changeHour(delta: number) {
+  const setH = (delta: number) => {
     const newH = Math.max(6, Math.min(23, h + delta));
     onChange(`${pad(newH)}:${pad(m)}`);
-  }
-
-  function setMinute(mins: number) {
-    onChange(`${pad(h)}:${pad(mins)}`);
-  }
+  };
+  const setM = (mins: number) => onChange(`${pad(h)}:${pad(mins)}`);
 
   return (
-    <div>
-      <p className="text-xs font-semibold mb-2" style={{ color: '#64748b' }}>{label}</p>
-      <div
-        className="rounded-2xl p-3"
-        style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}
-      >
-        {/* Hour control */}
-        <div className="flex items-center justify-center gap-4 mb-3">
-          <button
-            type="button"
-            onClick={() => changeHour(-1)}
-            className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-lg active:scale-95 transition-transform"
-            style={{ background: '#e0f2fe', color: '#0284c7' }}
-          >
-            −
+    <div className="flex flex-col items-center gap-1.5">
+      <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: 0.5 }}>{label}</span>
+
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setH(-1)}
+          className="w-7 h-7 rounded-full flex items-center justify-center font-bold active:scale-90 transition-transform"
+          style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 17 }}>−</button>
+
+        <span style={{ fontSize: 24, fontWeight: 900, color: '#0c4a6e', minWidth: 58, textAlign: 'center', letterSpacing: 1 }}>
+          {pad(h)}<span style={{ color: '#cbd5e1' }}>:</span>{pad(m)}
+        </span>
+
+        <button type="button" onClick={() => setH(1)}
+          className="w-7 h-7 rounded-full flex items-center justify-center font-bold active:scale-90 transition-transform"
+          style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 17 }}>+</button>
+      </div>
+
+      <div className="flex gap-1 w-full">
+        {[0, 15, 30, 45].map((mins) => (
+          <button key={mins} type="button" onClick={() => setM(mins)}
+            className="flex-1 rounded-lg font-bold active:scale-95 transition-all"
+            style={{
+              fontSize: 10, padding: '3px 0',
+              background: m === mins ? '#0284c7' : 'white',
+              color: m === mins ? 'white' : '#94a3b8',
+              border: m === mins ? 'none' : '1px solid #e2e8f0',
+            }}>
+            :{pad(mins)}
           </button>
-
-          <span
-            className="font-black tabular-nums text-center"
-            style={{ fontSize: 30, color: '#0c4a6e', letterSpacing: 1, minWidth: 80 }}
-          >
-            {pad(h)}<span style={{ color: '#94a3b8' }}>:</span>{pad(m)}
-          </span>
-
-          <button
-            type="button"
-            onClick={() => changeHour(1)}
-            className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-lg active:scale-95 transition-transform"
-            style={{ background: '#e0f2fe', color: '#0284c7' }}
-          >
-            +
-          </button>
-        </div>
-
-        {/* Minute select */}
-        <div className="flex gap-1.5">
-          {[0, 15, 30, 45].map((mins) => (
-            <button
-              key={mins}
-              type="button"
-              onClick={() => setMinute(mins)}
-              className="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95"
-              style={
-                m === mins
-                  ? { background: '#0284c7', color: 'white' }
-                  : { background: 'white', color: '#64748b', border: '1.5px solid #e2e8f0' }
-              }
-            >
-              :{pad(mins)}
-            </button>
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -112,14 +81,9 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
   const [startTime, setStartTime] = useState(initial?.start_time ? getTimeStr(initial.start_time) : '09:00');
   const [endTime, setEndTime] = useState(initial?.end_time ? getTimeStr(initial.end_time) : '11:00');
   const [location, setLocation] = useState(initial?.location ?? '');
-  const [selectedGroups, setSelectedGroups] = useState<string[]>(initial?.group_ids ?? []);
   const [color, setColor] = useState(initial?.color ?? ACTIVITY_COLORS[0]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
-  function toggleGroup(id: string) {
-    setSelectedGroups((prev) => prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]);
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -135,7 +99,7 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
         start_time: startIso,
         end_time: endIso,
         location: location.trim() || null,
-        group_ids: selectedGroups,
+        group_ids: [],
         color,
         created_by: profileId,
       });
@@ -145,153 +109,119 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
     }
   }
 
-  const labelStyle = { color: '#64748b', fontSize: 12, fontWeight: 600 } as React.CSSProperties;
-  const inputStyle = {
-    border: '1.5px solid #e2e8f0',
-    background: '#f8fafc',
-    color: '#0c4a6e',
-    borderRadius: 14,
-    padding: '10px 14px',
-    fontSize: 15,
-    width: '100%',
-    outline: 'none',
-    fontFamily: 'inherit',
-  } as React.CSSProperties;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col justify-end fade-in"
-      style={{ background: 'rgba(15,23,42,0.4)' }}
-      onClick={onCancel}
-    >
-      <div
-        className="rounded-t-3xl slide-up flex flex-col bg-white"
-        style={{ maxHeight: '90vh', boxShadow: '0 -4px 32px rgba(0,0,0,0.12)' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-9 h-1 rounded-full" style={{ background: '#e2e8f0' }} />
+    <div className="fixed inset-0 z-50 flex flex-col justify-end fade-in"
+      style={{ background: 'rgba(15,23,42,0.45)' }} onClick={onCancel}>
+      <div className="rounded-t-3xl slide-up flex flex-col bg-white"
+        style={{ maxHeight: '85vh', boxShadow: '0 -4px 24px rgba(0,0,0,0.14)' }}
+        onClick={(e) => e.stopPropagation()}>
+
+        {/* Handle */}
+        <div className="flex justify-center pt-2.5 pb-1">
+          <div className="w-8 h-1 rounded-full" style={{ background: '#e2e8f0' }} />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid #f1f5f9' }}>
+        <div className="flex items-center justify-between px-4 py-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
           <div>
-            <h2 className="font-black text-base" style={{ color: '#0c4a6e' }}>
-              {initial?.id ? 'עריכת פעילות' : 'פעילות חדשה'}
+            <h2 className="font-black text-sm" style={{ color: '#0c4a6e' }}>
+              {initial?.id ? 'עריכה' : 'פעילות חדשה'}
             </h2>
-            <p className="text-xs mt-0.5" style={{ color: '#94a3b8' }}>{dateLabel}</p>
+            <p style={{ fontSize: 11, color: '#94a3b8' }}>{dateLabel}</p>
           </div>
-          <button
-            onClick={onCancel}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: '#f1f5f9', color: '#64748b' }}
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+          <button onClick={onCancel}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: '#f1f5f9' }}>
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth={2.5} strokeLinecap="round">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
+
           {/* Title */}
-          <div>
-            <label className="block mb-1.5" style={labelStyle}>שם הפעילות</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="שם הפעילות"
-              autoFocus
-              style={inputStyle}
-            />
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="שם הפעילות"
+            autoFocus
+            className="w-full font-semibold focus:outline-none"
+            style={{
+              border: '1.5px solid #e2e8f0', background: '#f8fafc',
+              borderRadius: 12, padding: '9px 12px', fontSize: 14, color: '#0c4a6e',
+              fontFamily: 'inherit',
+            }}
+          />
+
+          {/* Times — side by side */}
+          <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}>
+            <div className="grid grid-cols-2 gap-3">
+              <CompactTimePicker label="התחלה" value={startTime} onChange={setStartTime} />
+              <CompactTimePicker label="סיום" value={endTime} onChange={setEndTime} />
+            </div>
           </div>
 
-          {/* Time pickers side by side */}
-          <div className="grid grid-cols-2 gap-3">
-            <TimePicker label="שעת התחלה" value={startTime} onChange={setStartTime} />
-            <TimePicker label="שעת סיום" value={endTime} onChange={setEndTime} />
-          </div>
-
-          {/* Location */}
-          <div>
-            <label className="block mb-1.5" style={labelStyle}>מיקום</label>
+          {/* Location — compact */}
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
+            style={{ border: '1.5px solid #e2e8f0', background: '#f8fafc' }}>
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth={2}>
+              <path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="כתובת או שם המקום"
-              style={inputStyle}
+              placeholder="מיקום (אופציונלי)"
+              className="flex-1 focus:outline-none bg-transparent"
+              style={{ fontSize: 13, color: '#0c4a6e', fontFamily: 'inherit' }}
             />
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block mb-1.5" style={labelStyle}>תיאור</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              placeholder="פרטים נוספים..."
-              style={{ ...inputStyle, resize: 'none' }}
-            />
-          </div>
+          {/* Description — compact */}
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            placeholder="תיאור (אופציונלי)"
+            className="w-full focus:outline-none resize-none"
+            style={{
+              border: '1.5px solid #e2e8f0', background: '#f8fafc',
+              borderRadius: 12, padding: '9px 12px', fontSize: 13, color: '#0c4a6e',
+              fontFamily: 'inherit',
+            }}
+          />
 
-          {/* Groups */}
-          {groups.length > 0 && (
-            <div>
-              <label className="block mb-1.5" style={labelStyle}>קבוצות</label>
-              <div className="flex flex-wrap gap-2">
-                {groups.map((g) => (
-                  <button key={g.id} type="button" onClick={() => toggleGroup(g.id)}
-                    className="px-3 py-1.5 rounded-full text-sm font-semibold border transition-all active:scale-95"
-                    style={selectedGroups.includes(g.id)
-                      ? { backgroundColor: g.color, borderColor: g.color, color: 'white' }
-                      : { borderColor: '#e2e8f0', color: '#64748b', background: 'white' }}>
-                    {g.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Color */}
-          <div>
-            <label className="block mb-1.5" style={labelStyle}>צבע בלוח</label>
-            <div className="flex gap-2.5 flex-wrap">
-              {ACTIVITY_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className="w-8 h-8 rounded-full transition-all active:scale-90"
-                  style={{
-                    backgroundColor: c,
-                    outline: color === c ? `3px solid ${c}` : 'none',
-                    outlineOffset: 2,
-                    transform: color === c ? 'scale(1.15)' : 'scale(1)',
-                  }}
-                />
-              ))}
-            </div>
+          {/* Activity type — compact 2x2 */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {ACTIVITY_COLORS.map((c) => (
+              <button key={c} type="button" onClick={() => setColor(c)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-xs transition-all active:scale-95"
+                style={color === c
+                  ? { background: c, color: 'white', boxShadow: `0 2px 8px ${c}55` }
+                  : { background: '#f8fafc', color: '#64748b', border: `1.5px solid ${c}66` }}>
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c }} />
+                {ACTIVITY_COLOR_LABELS[c]}
+              </button>
+            ))}
           </div>
 
           {error && (
-            <p className="text-sm rounded-xl px-4 py-2.5" style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>
+            <p className="text-xs rounded-xl px-3 py-2"
+              style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>
               {error}
             </p>
           )}
         </form>
 
-        {/* Save button */}
-        <div className="px-5 pb-8 pt-3" style={{ borderTop: '1px solid #f1f5f9' }}>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="w-full py-3.5 rounded-2xl font-black text-white text-base active:scale-[0.98] transition-all disabled:opacity-50"
-            style={{ background: saving ? '#94a3b8' : 'linear-gradient(135deg,#0284c7,#06b6d4)' }}
-          >
+        {/* Save */}
+        <div className="px-4 pb-7 pt-2" style={{ borderTop: '1px solid #f1f5f9' }}>
+          <button onClick={handleSubmit} disabled={saving}
+            className="w-full py-3 rounded-2xl font-black text-white text-sm active:scale-[0.98] transition-all disabled:opacity-50"
+            style={{ background: saving ? '#94a3b8' : 'linear-gradient(135deg,#0284c7,#06b6d4)' }}>
             {saving ? 'שומר...' : initial?.id ? 'שמור שינויים' : 'הוסף פעילות'}
           </button>
         </div>
