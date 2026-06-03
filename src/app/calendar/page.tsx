@@ -114,6 +114,32 @@ export default function CalendarPage() {
     setView('day');
   }
 
+  function getNextWeekday(date: Date, dir: 1 | -1): Date | null {
+    let d = new Date(date);
+    for (let i = 0; i < 10; i++) {
+      d.setDate(d.getDate() + dir);
+      const dow = d.getDay();
+      if (dow !== 5 && dow !== 6) {
+        // clamp to summer
+        if (d.getFullYear() === SUMMER_YEAR && d.getMonth() >= SUMMER_START && d.getMonth() <= SUMMER_END) {
+          return d;
+        }
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function handlePrevDay() {
+    const prev = getNextWeekday(currentDate, -1);
+    if (prev) setCurrentDate(prev);
+  }
+
+  function handleNextDay() {
+    const next = getNextWeekday(currentDate, 1);
+    if (next) setCurrentDate(next);
+  }
+
   function handleAddFromDay(date: Date) {
     const pad = (n: number) => String(n).padStart(2, '0');
     const dateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -194,6 +220,10 @@ export default function CalendarPage() {
             onActivityClick={setSelectedActivity}
             isGuide={profile.role === 'guide'}
             onAddActivity={handleAddFromDay}
+            onPrevDay={handlePrevDay}
+            onNextDay={handleNextDay}
+            canGoPrev={!!getNextWeekday(currentDate, -1)}
+            canGoNext={!!getNextWeekday(currentDate, 1)}
           />
         )}
       </div>

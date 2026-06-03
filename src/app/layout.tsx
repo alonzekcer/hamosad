@@ -4,6 +4,11 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'המוסד - לוח פעילויות',
   description: 'ניהול פעילויות חופש לנוער',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { activitiesForDay, formatTimeHebrew } from '@/lib/calendarUtils';
 import { HEBREW_DAYS_FULL, HEBREW_MONTHS } from '@/lib/constants';
 import type { Activity } from '@/types';
@@ -10,21 +11,73 @@ interface DayViewProps {
   onActivityClick: (a: Activity) => void;
   isGuide?: boolean;
   onAddActivity?: (date: Date) => void;
+  onPrevDay?: () => void;
+  onNextDay?: () => void;
+  canGoPrev?: boolean;
+  canGoNext?: boolean;
 }
 
-export default function DayView({ date, activities, onActivityClick, isGuide, onAddActivity }: DayViewProps) {
+export default function DayView({ date, activities, onActivityClick, isGuide, onAddActivity, onPrevDay, onNextDay, canGoPrev = true, canGoNext = true }: DayViewProps) {
   const dayActivities = activitiesForDay(activities, date).sort(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
   const dayName = HEBREW_DAYS_FULL[date.getDay()];
-  const dateLabel = `${date.getDate()} ${HEBREW_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+  const dateLabel = `${date.getDate()} ${HEBREW_MONTHS[date.getMonth()]}`;
+
+  // Swipe support
+  const touchStartX = useRef(0);
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && canGoNext) onNextDay?.();
+      if (diff < 0 && canGoPrev) onPrevDay?.();
+    }
+  }
 
   return (
-    <div className="flex-1 overflow-y-auto relative" style={{ background: 'linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%)' }}>
-      <div className="text-center py-5 px-4" style={{ background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)' }}>
-        <div className="text-3xl mb-1">🏖️</div>
-        <div className="text-xl font-black" style={{ color: '#0369a1' }}>יום {dayName}</div>
-        <div className="text-sm font-medium" style={{ color: '#38bdf8' }}>{dateLabel}</div>
+    <div
+      className="flex-1 overflow-y-auto relative"
+      style={{ background: 'linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%)' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Day header with arrows */}
+      <div
+        className="flex items-center justify-between px-3 py-4"
+        style={{ background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)' }}
+      >
+        {/* ← prev */}
+        <button
+          onClick={onPrevDay}
+          disabled={!canGoPrev}
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-20"
+          style={{ background: canGoPrev ? 'white' : 'transparent', boxShadow: canGoPrev ? '0 1px 6px rgba(2,132,199,0.15)' : 'none' }}
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </button>
+
+        {/* Date */}
+        <div className="text-center">
+          <div className="text-lg font-black" style={{ color: '#0369a1' }}>יום {dayName}</div>
+          <div className="text-sm font-medium" style={{ color: '#38bdf8' }}>{dateLabel}</div>
+        </div>
+
+        {/* → next */}
+        <button
+          onClick={onNextDay}
+          disabled={!canGoNext}
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-20"
+          style={{ background: canGoNext ? 'white' : 'transparent', boxShadow: canGoNext ? '0 1px 6px rgba(2,132,199,0.15)' : 'none' }}
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15,18 9,12 15,6"/>
+          </svg>
+        </button>
       </div>
 
       <div className="px-3 pb-24">
@@ -38,7 +91,7 @@ export default function DayView({ date, activities, onActivityClick, isGuide, on
                 className="mt-2 px-5 py-2.5 rounded-2xl text-white font-bold text-sm shadow-md active:scale-95 transition-all"
                 style={{ background: 'linear-gradient(135deg, #0284c7, #06b6d4)' }}
               >
-                ➕ הוסף פעילות
+                הוסף פעילות
               </button>
             )}
           </div>
