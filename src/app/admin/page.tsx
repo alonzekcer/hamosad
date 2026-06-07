@@ -1,18 +1,81 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createRoot } from 'react-dom/client';
 import { getOrCreateClientId, getProfile } from '@/lib/auth';
 import {
   fetchPendingProfiles, fetchAllProfiles, approveProfile, rejectProfile,
   fetchActivities,
   createPublicLink, fetchPublicLinks,
 } from '@/lib/db';
-import PrintCalendar from '@/components/PrintCalendar';
+import { getMonthGrid, activitiesForDay, formatTimeHebrew } from '@/lib/calendarUtils';
 import type { Profile, PublicLink, Activity } from '@/types';
 import { HEBREW_MONTHS } from '@/lib/constants';
+
+const COLOR_LABELS: Record<string, string> = {
+  '#f59e0b': 'שיא',
+  '#8b5cf6': 'מועדון',
+  '#22c55e': 'חוץ מועדון',
+  '#38bdf8': 'בריכה',
+};
+
+function buildMonthHTML(month: number, year: number, activities: Activity[]): string {
+  const grid = getMonthGrid(year, month);
+  const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'];
+
+  const rowH = Math.floor(490 / 6);
+
+  const rows = grid.map((week) => {
+    const cells = week.map((day, di) => {
+      if (!day) {
+        return `<td style="border-right:${di < 4 ? '1px solid #bae6fd' : 'none'};background:#f0f9ff;"></td>`;
+      }
+      const acts = activitiesForDay(activities, day);
+      const isCurrentMonth = day.getMonth() === month;
+      const chips = acts.slice(0, 4).map((a) => `
+        <div style="background:${a.color};color:white;border-radius:5px;padding:2px 5px;margin-bottom:2px;font-size:10px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;direction:rtl;">
+          ${a.title} <span style="opacity:0.85;font-size:9px;">${formatTimeHebrew(a.start_time)}–${formatTimeHebrew(a.end_time)}</span>
+        </div>`).join('');
+      const extra = acts.length > 4 ? `<div style="font-size:9px;color:#0284c7;font-weight:700;">+${acts.length - 4} עוד</div>` : '';
+      return `
+        <td style="border-right:${di < 4 ? '1px solid #bae6fd' : 'none'};background:white;padding:4px 3px;vertical-align:top;opacity:${isCurrentMonth ? 1 : 0.25};overflow:hidden;max-height:${rowH}px;">
+          <div style="font-size:12px;font-weight:800;color:#0369a1;margin-bottom:3px;text-align:right;">${day.getDate()}</div>
+          ${chips}${extra}
+        </td>`;
+    }).join('');
+    return `<tr style="height:${rowH}px;">${cells}</tr>`;
+  }).join('');
+
+  const legend = Object.entries(COLOR_LABELS).map(([c, l]) => `
+    <div style="display:flex;align-items:center;gap:5px;">
+      <div style="width:11px;height:11px;border-radius:50%;background:${c};flex-shrink:0;"></div>
+      <span style="font-size:11px;color:#0369a1;font-weight:600;">${l}</span>
+    </div>`).join('');
+
+  return `
+    <div style="width:1060px;height:750px;background:white;direction:rtl;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;overflow:hidden;">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#0284c7,#06b6d4);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <div style="color:rgba(255,255,255,0.8);font-size:12px;">מועדון מוסד — תוכנית פעילויות חופש גדול</div>
+        <div style="color:white;font-size:26px;font-weight:900;letter-spacing:1px;">${HEBREW_MONTHS[month]} ${year} 🌊</div>
+        <div style="display:flex;gap:14px;">${legend}</div>
+      </div>
+      <!-- Day headers -->
+      <table style="width:100%;border-collapse:collapse;flex-shrink:0;">
+        <tr style="background:#0369a1;">
+          ${dayNames.map((d, i) => `<th style="text-align:center;color:white;font-weight:700;padding:8px 4px;font-size:13px;border-right:${i < 4 ? '1px solid rgba(255,255,255,0.2)' : 'none'};width:20%;">${d}</th>`).join('')}
+        </tr>
+      </table>
+      <!-- Grid -->
+      <div style="flex:1;border:2px solid #bae6fd;border-top:none;overflow:hidden;">
+        <table style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;">
+          <colgroup>${[0,1,2,3,4].map(() => '<col style="width:20%">').join('')}</colgroup>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
 
 type AdminTab = 'pending' | 'users' | 'share';
 
@@ -29,7 +92,6 @@ export default function AdminPage() {
   const [links, setLinks] = useState<PublicLink[]>([]);
   const [copied, setCopied] = useState('');
   const [exporting, setExporting] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function init() {
@@ -81,51 +143,51 @@ export default function AdminPage() {
   async function handleExportPDF() {
     setExporting(true);
     try {
-      // Fetch all activities for summer months
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+      ]);
+
       const monthsData = await Promise.all(
         SUMMER_MONTHS.map(async (m) => {
           const start = new Date(SUMMER_YEAR, m, 1, 0, 0, 0);
           const end = new Date(SUMMER_YEAR, m + 1, 0, 23, 59, 59);
           const activities = await fetchActivities(start, end);
-          return { month: m, year: SUMMER_YEAR, activities };
+          return { month: m, activities };
         })
       );
 
-      // Mount PrintCalendar into a hidden iframe and print it
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;';
-      document.body.appendChild(iframe);
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-      const iDoc = iframe.contentDocument!;
-      iDoc.open();
-      iDoc.write(`<!DOCTYPE html><html dir="rtl" lang="he"><head>
-        <meta charset="UTF-8">
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&display=swap" rel="stylesheet">
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Heebo', Arial, sans-serif; direction: rtl; background: white; }
-          @page { size: A4 landscape; margin: 10mm; }
-        </style>
-      </head><body><div id="root"></div></body></html>`);
-      iDoc.close();
+      for (let i = 0; i < monthsData.length; i++) {
+        const { month, activities } = monthsData[i];
 
-      // Render React component into iframe
-      const container = iDoc.getElementById('root')!;
-      const root = createRoot(container);
-      root.render(<PrintCalendar months={monthsData} />);
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1060px;height:750px;background:white;';
+        wrapper.innerHTML = buildMonthHTML(month, SUMMER_YEAR, activities);
+        document.body.appendChild(wrapper);
 
-      // Wait for fonts and render
-      await new Promise((r) => setTimeout(r, 1500));
-      iframe.contentWindow!.print();
+        await new Promise((r) => setTimeout(r, 80));
 
-      setTimeout(() => {
-        root.unmount();
-        document.body.removeChild(iframe);
-        setExporting(false);
-      }, 2000);
+        const canvas = await html2canvas(wrapper, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          width: 1060,
+          height: 750,
+        });
+
+        document.body.removeChild(wrapper);
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 297, 210);
+      }
+
+      pdf.save('תוכנית-חופש-גדול-מועדון-מוסד.pdf');
     } catch (err) {
       console.error(err);
+    } finally {
       setExporting(false);
     }
   }
