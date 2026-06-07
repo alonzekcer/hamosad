@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getOrCreateClientId, getProfile } from '@/lib/auth';
 import { fetchActivities, createActivity, updateActivity, deleteActivity } from '@/lib/db';
+import { exportCalendarPDF } from '@/lib/exportPdf';
 import TopBar from '@/components/TopBar';
+import NavBar from '@/components/NavBar';
 import MonthView from '@/components/calendar/MonthView';
 import DayView from '@/components/calendar/DayView';
 import ActivityModal from '@/components/ActivityModal';
@@ -42,6 +44,7 @@ export default function CalendarPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Partial<Activity> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -200,6 +203,23 @@ export default function CalendarPage() {
           />
         )}
       </div>
+
+      {/* PDF export — guides, month view only */}
+      {profile.role === 'guide' && view === 'month' && (
+        <div className="px-3 py-2" style={{ borderTop: '1px solid #e0f2fe', background: 'white' }}>
+          <button
+            onClick={() => exportCalendarPDF(fetchActivities, setExporting)}
+            disabled={exporting}
+            className="w-full py-2.5 rounded-2xl font-bold text-sm active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            style={{ background: exporting ? '#e0f2fe' : '#f0f9ff', color: '#0284c7', border: '1.5px solid #bae6fd' }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            {exporting ? 'מייצא PDF...' : 'ייצא תוכנית קיץ PDF'}
+          </button>
+        </div>
+      )}
 
       {selectedActivity && (
         <ActivityModal

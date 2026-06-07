@@ -25,7 +25,6 @@ export default function DayView({ date, activities, onActivityClick, isGuide, on
   const dayName = HEBREW_DAYS_FULL[date.getDay()];
   const dateLabel = `${date.getDate()} ${HEBREW_MONTHS[date.getMonth()]}`;
 
-  // Swipe support
   const touchStartX = useRef(0);
   function handleTouchStart(e: React.TouchEvent) {
     touchStartX.current = e.touches[0].clientX;
@@ -45,57 +44,26 @@ export default function DayView({ date, activities, onActivityClick, isGuide, on
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Back to month */}
-      <div className="px-3 pt-3 pb-1">
+      {/* Header: back icon + date */}
+      <div className="flex items-center px-3 py-3">
         <button
           onClick={onBackToMonth}
-          className="flex items-center gap-1.5 text-sm font-bold active:opacity-60 transition-opacity"
-          style={{ color: '#0284c7' }}
+          className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-all"
+          style={{ background: 'white', boxShadow: '0 1px 6px rgba(2,132,199,0.15)' }}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9,18 15,12 9,6"/>
-          </svg>
-          חזרה לחודש
-        </button>
-      </div>
-
-      {/* Day header with arrows */}
-      <div
-        className="flex items-center justify-between px-3 py-3"
-        style={{ background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)' }}
-      >
-        {/* ← prev */}
-        <button
-          onClick={onPrevDay}
-          disabled={!canGoPrev}
-          className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-20"
-          style={{ background: canGoPrev ? 'white' : 'transparent', boxShadow: canGoPrev ? '0 1px 6px rgba(2,132,199,0.15)' : 'none' }}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9,18 15,12 9,6"/>
+            <polyline points="9,18 15,12 9,6" />
           </svg>
         </button>
-
-        {/* Date */}
-        <div className="text-center">
+        <div className="flex-1 text-center">
           <div className="text-lg font-black" style={{ color: '#0369a1' }}>יום {dayName}</div>
           <div className="text-sm font-medium" style={{ color: '#38bdf8' }}>{dateLabel}</div>
         </div>
-
-        {/* → next */}
-        <button
-          onClick={onNextDay}
-          disabled={!canGoNext}
-          className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-20"
-          style={{ background: canGoNext ? 'white' : 'transparent', boxShadow: canGoNext ? '0 1px 6px rgba(2,132,199,0.15)' : 'none' }}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15,18 9,12 15,6"/>
-          </svg>
-        </button>
+        <div className="w-9" />
       </div>
 
-      <div className="px-3 pb-24">
+      {/* Content */}
+      <div className="px-12 pb-6">
         {dayActivities.length === 0 ? (
           <div className="flex flex-col items-center justify-center mt-12 gap-3">
             <div className="text-5xl">🌊</div>
@@ -150,6 +118,28 @@ export default function DayView({ date, activities, onActivityClick, isGuide, on
           </div>
         )}
       </div>
+
+      {/* Center nav arrows — fixed vertically centered */}
+      <button
+        onClick={onPrevDay}
+        disabled={!canGoPrev}
+        className="fixed left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-20 z-30"
+        style={{ background: canGoPrev ? 'white' : 'transparent', boxShadow: canGoPrev ? '0 2px 8px rgba(2,132,199,0.2)' : 'none' }}
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9,18 15,12 9,6" />
+        </svg>
+      </button>
+      <button
+        onClick={onNextDay}
+        disabled={!canGoNext}
+        className="fixed right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-20 z-30"
+        style={{ background: canGoNext ? 'white' : 'transparent', boxShadow: canGoNext ? '0 2px 8px rgba(2,132,199,0.2)' : 'none' }}
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15,18 9,12 15,6" />
+        </svg>
+      </button>
 
       {isGuide && dayActivities.length > 0 && (
         <button
