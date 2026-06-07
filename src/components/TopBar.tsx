@@ -19,14 +19,6 @@ interface TopBarProps {
   onToday: () => void;
 }
 
-function formatWeekLabel(date: Date): string {
-  const start = new Date(date);
-  start.setDate(date.getDate() - date.getDay());
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  return `${start.getDate()}/${start.getMonth() + 1} – ${end.getDate()}/${end.getMonth() + 1}`;
-}
-
 function formatDayLabel(date: Date): string {
   const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
   return `יום ${days[date.getDay()]}, ${date.getDate()} ${HEBREW_MONTHS[date.getMonth()]}`;
@@ -74,7 +66,6 @@ export default function TopBar({ year, month, view, date, isGuide, canGoPrev, ca
 
   const label =
     view === 'month' ? `${HEBREW_MONTHS[month]} ${year}`
-    : view === 'week' && date ? formatWeekLabel(date)
     : date ? formatDayLabel(date)
     : '';
 

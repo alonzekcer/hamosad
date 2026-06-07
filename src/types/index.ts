@@ -1,6 +1,6 @@
 export type Role = 'guide' | 'youth';
 export type AttendanceStatus = 'confirmed' | 'cancelled';
-export type CalendarView = 'month' | 'week' | 'day';
+export type CalendarView = 'month' | 'day';
 
 export interface Profile {
   id: string;

@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getOrCreateClientId, getProfile } from '@/lib/auth';
 import { fetchActivities, createActivity, updateActivity, deleteActivity } from '@/lib/db';
 import TopBar from '@/components/TopBar';
-import NavBar from '@/components/NavBar';
 import MonthView from '@/components/calendar/MonthView';
-import WeekView from '@/components/calendar/WeekView';
 import DayView from '@/components/calendar/DayView';
 import ActivityModal from '@/components/ActivityModal';
 import ActivityForm from '@/components/ActivityForm';
@@ -61,11 +59,6 @@ export default function CalendarPage() {
     if (view === 'month') {
       start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    } else if (view === 'week') {
-      start = new Date(currentDate);
-      start.setDate(currentDate.getDate() - currentDate.getDay());
-      end = new Date(start);
-      end.setDate(start.getDate() + 6);
     } else {
       start = new Date(currentDate);
       end = new Date(currentDate);
@@ -79,34 +72,21 @@ export default function CalendarPage() {
     if (!loading) loadActivities();
   }, [loading, loadActivities]);
 
-  // Navigation: prev = go back, next = go forward. Clamped to summer months.
   function navigate(dir: 1 | -1) {
     setCurrentDate((prev) => {
       const d = new Date(prev);
-      if (view === 'month') {
-        const newMonth = d.getMonth() + dir;
-        if (newMonth < SUMMER_START || newMonth > SUMMER_END) return prev;
-        d.setMonth(newMonth);
-      } else if (view === 'week') {
-        d.setDate(d.getDate() + dir * 7);
-        const clamped = clampToSummer(d);
-        return clamped;
-      } else {
-        d.setDate(d.getDate() + dir);
-        const clamped = clampToSummer(d);
-        return clamped;
-      }
+      const newMonth = d.getMonth() + dir;
+      if (newMonth < SUMMER_START || newMonth > SUMMER_END) return prev;
+      d.setMonth(newMonth);
       return d;
     });
   }
 
   function canGoPrev(): boolean {
-    if (view === 'month') return currentDate.getMonth() > SUMMER_START;
-    return true;
+    return currentDate.getMonth() > SUMMER_START;
   }
   function canGoNext(): boolean {
-    if (view === 'month') return currentDate.getMonth() < SUMMER_END;
-    return true;
+    return currentDate.getMonth() < SUMMER_END;
   }
 
   function handleDayClick(day: Date) {
@@ -188,8 +168,8 @@ export default function CalendarPage() {
         view={view}
         date={currentDate}
         isGuide={profile.role === 'guide'}
-        canGoPrev={canGoPrev()}
-        canGoNext={canGoNext()}
+        canGoPrev={view === 'month' ? canGoPrev() : false}
+        canGoNext={view === 'month' ? canGoNext() : false}
         onPrev={() => navigate(-1)}
         onNext={() => navigate(1)}
         onToday={() => setCurrentDate(initialDate())}
@@ -200,14 +180,6 @@ export default function CalendarPage() {
           <MonthView
             year={currentDate.getFullYear()}
             month={currentDate.getMonth()}
-            activities={activities}
-            onActivityClick={setSelectedActivity}
-            onDayClick={handleDayClick}
-          />
-        )}
-        {view === 'week' && (
-          <WeekView
-            date={currentDate}
             activities={activities}
             onActivityClick={setSelectedActivity}
             onDayClick={handleDayClick}
@@ -224,11 +196,10 @@ export default function CalendarPage() {
             onNextDay={handleNextDay}
             canGoPrev={!!getNextWeekday(currentDate, -1)}
             canGoNext={!!getNextWeekday(currentDate, 1)}
+            onBackToMonth={() => setView('month')}
           />
         )}
       </div>
-
-      <NavBar view={view} onViewChange={setView} />
 
       {selectedActivity && (
         <ActivityModal

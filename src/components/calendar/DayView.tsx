@@ -15,9 +15,10 @@ interface DayViewProps {
   onNextDay?: () => void;
   canGoPrev?: boolean;
   canGoNext?: boolean;
+  onBackToMonth?: () => void;
 }
 
-export default function DayView({ date, activities, onActivityClick, isGuide, onAddActivity, onPrevDay, onNextDay, canGoPrev = true, canGoNext = true }: DayViewProps) {
+export default function DayView({ date, activities, onActivityClick, isGuide, onAddActivity, onPrevDay, onNextDay, canGoPrev = true, canGoNext = true, onBackToMonth }: DayViewProps) {
   const dayActivities = activitiesForDay(activities, date).sort(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
@@ -44,9 +45,23 @@ export default function DayView({ date, activities, onActivityClick, isGuide, on
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Back to month */}
+      <div className="px-3 pt-3 pb-1">
+        <button
+          onClick={onBackToMonth}
+          className="flex items-center gap-1.5 text-sm font-bold active:opacity-60 transition-opacity"
+          style={{ color: '#0284c7' }}
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+          חזרה לחודש
+        </button>
+      </div>
+
       {/* Day header with arrows */}
       <div
-        className="flex items-center justify-between px-3 py-4"
+        className="flex items-center justify-between px-3 py-3"
         style={{ background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)' }}
       >
         {/* ← prev */}
@@ -139,7 +154,7 @@ export default function DayView({ date, activities, onActivityClick, isGuide, on
       {isGuide && dayActivities.length > 0 && (
         <button
           onClick={() => onAddActivity?.(date)}
-          className="fixed bottom-20 left-4 w-14 h-14 rounded-full text-white text-2xl shadow-xl flex items-center justify-center active:scale-95 transition-all z-40 fab-pulse"
+          className="fixed bottom-6 left-4 w-14 h-14 rounded-full text-white text-2xl shadow-xl flex items-center justify-center active:scale-95 transition-all z-40 fab-pulse"
           style={{ background: 'linear-gradient(135deg, #0284c7, #06b6d4)' }}
         >
           ➕

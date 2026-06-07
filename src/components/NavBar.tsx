@@ -9,7 +9,6 @@ interface NavBarProps {
 
 const tabs: { label: string; emoji: string; value: CalendarView }[] = [
   { label: 'יום', emoji: '🏖️', value: 'day' },
-  { label: 'שבוע', emoji: '🌊', value: 'week' },
   { label: 'חודש', emoji: '📅', value: 'month' },
 ];
 

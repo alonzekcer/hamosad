@@ -7,10 +7,9 @@ import { getOrCreateClientId, getProfile } from '@/lib/auth';
 import {
   fetchPendingProfiles, fetchAllProfiles, approveProfile, rejectProfile,
   fetchActivities,
-  createPublicLink, fetchPublicLinks,
 } from '@/lib/db';
 import { getMonthGrid, activitiesForDay, formatTimeHebrew } from '@/lib/calendarUtils';
-import type { Profile, PublicLink, Activity } from '@/types';
+import type { Profile, Activity } from '@/types';
 import { HEBREW_MONTHS } from '@/lib/constants';
 
 const COLOR_LABELS: Record<string, string> = {
@@ -90,8 +89,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<Profile[]>([]);
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
-  const [links, setLinks] = useState<PublicLink[]>([]);
-  const [copied, setCopied] = useState('');
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -106,15 +103,13 @@ export default function AdminPage() {
     init();
   }, [router]);
 
-  async function loadAll(profileId: string) {
-    const [pend, users, lnks] = await Promise.all([
+  async function loadAll(_profileId: string) {
+    const [pend, users] = await Promise.all([
       fetchPendingProfiles(),
       fetchAllProfiles(),
-      fetchPublicLinks(profileId),
     ]);
     setPending(pend);
     setAllUsers(users);
-    setLinks(lnks);
   }
 
   async function handleApprove(id: string) {
@@ -126,19 +121,6 @@ export default function AdminPage() {
     if (!confirm('למחוק את המשתמש?')) return;
     await rejectProfile(id);
     if (profile) await loadAll(profile.id);
-  }
-
-  async function handleCreateLink() {
-    if (!profile) return;
-    const link = await createPublicLink(profile.id);
-    setLinks((prev) => [link, ...prev]);
-  }
-
-  function copyLink(token: string) {
-    const url = `${window.location.origin}/public/${token}`;
-    navigator.clipboard.writeText(url);
-    setCopied(token);
-    setTimeout(() => setCopied(''), 2000);
   }
 
   async function handleExportPDF() {
@@ -318,10 +300,9 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Share + Export */}
+        {/* Export PDF only */}
         {tab === 'share' && (
           <div className="flex flex-col gap-4">
-            {/* PDF Export */}
             <div className="bg-white rounded-2xl p-4 shadow-sm" style={{ border: '2px solid #7dd3fc' }}>
               <h3 className="font-black mb-1" style={{ color: '#0369a1' }}>ייצוא תוכנית קיץ</h3>
               <p className="text-sm mb-4" style={{ color: '#38bdf8' }}>
@@ -336,34 +317,6 @@ export default function AdminPage() {
                 {exporting ? '⏳ מייצא...' : '⬇️ ייצא PDF'}
               </button>
             </div>
-
-            {/* Public link */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm" style={{ border: '1px solid #bae6fd' }}>
-              <h3 className="font-black mb-1" style={{ color: '#0369a1' }}>קישור ציבורי לצפייה</h3>
-              <p className="text-sm mb-3" style={{ color: '#38bdf8' }}>נערים יוכלו לצפות בלוח ללא כניסה</p>
-              <button onClick={handleCreateLink}
-                className="w-full py-3 rounded-2xl font-bold text-white active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg,#0284c7,#06b6d4)' }}>
-                צור קישור חדש
-              </button>
-            </div>
-
-            {links.map((link) => {
-              const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/public/${link.token}`;
-              return (
-                <div key={link.id} className="bg-white rounded-2xl p-4 shadow-sm" style={{ border: '1px solid #bae6fd' }}>
-                  <div className="text-xs mb-2" style={{ color: '#38bdf8' }}>{new Date(link.created_at).toLocaleDateString('he-IL')}</div>
-                  <div className="text-xs rounded-xl px-3 py-2 font-mono break-all mb-3" style={{ background: '#f0f9ff', color: '#0369a1' }}>{url}</div>
-                  <button onClick={() => copyLink(link.token)}
-                    className="w-full py-2.5 rounded-xl text-sm font-black transition-all"
-                    style={copied === link.token
-                      ? { background: 'linear-gradient(135deg,#0284c7,#06b6d4)', color: 'white' }
-                      : { border: '2px solid #7dd3fc', color: '#0284c7' }}>
-                    {copied === link.token ? 'הועתק! ✓' : 'העתק קישור'}
-                  </button>
-                </div>
-              );
-            })}
           </div>
         )}
       </div>
