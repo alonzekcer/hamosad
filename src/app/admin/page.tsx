@@ -33,14 +33,15 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
       }
       const acts = activitiesForDay(activities, day);
       const isCurrentMonth = day.getMonth() === month;
-      const chips = acts.slice(0, 4).map((a) => `
-        <div style="background:${a.color};color:white;border-radius:5px;padding:2px 5px;margin-bottom:2px;font-size:10px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;direction:rtl;">
-          ${a.title} <span style="opacity:0.85;font-size:9px;">${formatTimeHebrew(a.start_time)}–${formatTimeHebrew(a.end_time)}</span>
+      const chips = acts.slice(0, 3).map((a) => `
+        <div style="background:${a.color};color:white;border-radius:5px;padding:3px 6px;margin-bottom:3px;direction:rtl;">
+          <div style="font-size:11px;font-weight:700;line-height:1.3;word-break:break-word;">${a.title}</div>
+          <div style="font-size:10px;opacity:0.9;line-height:1.2;">${formatTimeHebrew(a.start_time)}–${formatTimeHebrew(a.end_time)}</div>
         </div>`).join('');
-      const extra = acts.length > 4 ? `<div style="font-size:9px;color:#0284c7;font-weight:700;">+${acts.length - 4} עוד</div>` : '';
+      const extra = acts.length > 3 ? `<div style="font-size:10px;color:#0284c7;font-weight:700;padding-right:2px;">+${acts.length - 3} עוד</div>` : '';
       return `
-        <td style="border-right:${di < 4 ? '1px solid #bae6fd' : 'none'};background:white;padding:4px 3px;vertical-align:top;opacity:${isCurrentMonth ? 1 : 0.25};overflow:hidden;max-height:${rowH}px;">
-          <div style="font-size:12px;font-weight:800;color:#0369a1;margin-bottom:3px;text-align:right;">${day.getDate()}</div>
+        <td style="border-right:${di < 4 ? '1px solid #bae6fd' : 'none'};background:white;padding:5px 4px;vertical-align:top;opacity:${isCurrentMonth ? 1 : 0.25};overflow:hidden;height:${rowH}px;">
+          <div style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px;text-align:right;">${day.getDate()}</div>
           ${chips}${extra}
         </td>`;
     }).join('');
