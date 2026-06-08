@@ -8,10 +8,9 @@ import {
   fetchPendingProfiles, fetchAllProfiles, approveProfile, rejectProfile,
 } from '@/lib/db';
 import type { Profile } from '@/types';
+import { GRADES } from '@/types';
 
 type AdminTab = 'pending' | 'users';
-
-const SUMMER_YEAR = 2026;
 
 export default function AdminPage() {
   const router = useRouter();
@@ -20,6 +19,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<Profile[]>([]);
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
+  const [pendingGrades, setPendingGrades] = useState<Record<string, string>>({});
+  const [usersGradeFilter, setUsersGradeFilter] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -43,7 +44,7 @@ export default function AdminPage() {
   }
 
   async function handleApprove(id: string) {
-    await approveProfile(id);
+    await approveProfile(id, pendingGrades[id]);
     if (profile) await loadAll(profile.id);
   }
 
@@ -65,6 +66,10 @@ export default function AdminPage() {
     { key: 'pending', label: 'ממתינים', badge: pending.length },
     { key: 'users', label: 'משתמשים' },
   ];
+
+  const filteredUsers = usersGradeFilter
+    ? allUsers.filter((u) => u.grade === usersGradeFilter)
+    : allUsers;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -120,6 +125,30 @@ export default function AdminPage() {
                     <div className="text-xs" style={{ color: '#38bdf8' }}>{new Date(u.created_at).toLocaleDateString('he-IL')}</div>
                   </div>
                 </div>
+
+                {/* Grade picker */}
+                <div className="mb-3">
+                  <div className="text-xs font-bold mb-2" style={{ color: '#0369a1' }}>שכבה</div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {GRADES.map((g) => {
+                      const selected = pendingGrades[u.id] === g;
+                      return (
+                        <button
+                          key={g}
+                          onClick={() => setPendingGrades((prev) => ({ ...prev, [u.id]: selected ? '' : g }))}
+                          className="w-9 h-9 rounded-xl text-sm font-black transition-all active:scale-95"
+                          style={selected
+                            ? { background: 'linear-gradient(135deg,#0284c7,#06b6d4)', color: 'white' }
+                            : { background: '#f0f9ff', color: '#0369a1', border: '1.5px solid #bae6fd' }
+                          }
+                        >
+                          {g}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   <button onClick={() => handleApprove(u.id)}
                     className="flex-1 py-2.5 rounded-xl text-sm font-black text-white active:scale-95 transition-all"
@@ -140,7 +169,34 @@ export default function AdminPage() {
         {/* All users */}
         {tab === 'users' && (
           <div className="flex flex-col gap-2">
-            {allUsers.map((u) => (
+            {/* Grade filter */}
+            <div className="flex gap-1.5 flex-wrap pb-1">
+              <button
+                onClick={() => setUsersGradeFilter(null)}
+                className="px-3 py-1.5 rounded-xl text-xs font-black transition-all active:scale-95"
+                style={!usersGradeFilter
+                  ? { background: 'linear-gradient(135deg,#0284c7,#06b6d4)', color: 'white' }
+                  : { background: '#f0f9ff', color: '#0369a1', border: '1.5px solid #bae6fd' }
+                }
+              >
+                הכל
+              </button>
+              {GRADES.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setUsersGradeFilter(usersGradeFilter === g ? null : g)}
+                  className="w-9 h-9 rounded-xl text-sm font-black transition-all active:scale-95"
+                  style={usersGradeFilter === g
+                    ? { background: 'linear-gradient(135deg,#0284c7,#06b6d4)', color: 'white' }
+                    : { background: '#f0f9ff', color: '#0369a1', border: '1.5px solid #bae6fd' }
+                  }
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+
+            {filteredUsers.map((u) => (
               <div key={u.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3" style={{ border: '1px solid #bae6fd' }}>
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0"
@@ -150,8 +206,16 @@ export default function AdminPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-black truncate" style={{ color: '#0c4a6e' }}>{u.full_name}</div>
-                  <div className="text-xs" style={{ color: '#38bdf8' }}>
-                    {u.role === 'guide' ? 'מדריך' : 'נער'} · {u.approved ? 'מאושר' : 'ממתין'}
+                  <div className="text-xs flex items-center gap-1.5" style={{ color: '#38bdf8' }}>
+                    <span>{u.role === 'guide' ? 'מדריך' : 'נער'}</span>
+                    <span>·</span>
+                    <span>{u.approved ? 'מאושר' : 'ממתין'}</span>
+                    {u.grade && (
+                      <>
+                        <span>·</span>
+                        <span className="font-black" style={{ color: '#0284c7' }}>כיתה {u.grade}</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-1.5 shrink-0">

@@ -5,6 +5,7 @@ import { formatTimeHebrew } from '@/lib/calendarUtils';
 import { HEBREW_DAYS_FULL, HEBREW_MONTHS } from '@/lib/constants';
 import { toggleAttendance, fetchActivityAttendance } from '@/lib/db';
 import type { Activity, Attendance, Profile } from '@/types';
+import { GRADES } from '@/types';
 
 type AttendanceStatus = 'confirmed' | 'cancelled';
 
@@ -22,6 +23,7 @@ export default function ActivityModal({ activity, profile, groups, onClose, onEd
   const [attendees, setAttendees] = useState<(Attendance & { profiles: Profile })[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAttendees, setShowAttendees] = useState(false);
+  const [gradeFilter, setGradeFilter] = useState<string | null>(null);
 
   const startDate = new Date(activity.start_time);
   const dayName = HEBREW_DAYS_FULL[startDate.getDay()];
@@ -49,7 +51,12 @@ export default function ActivityModal({ activity, profile, groups, onClose, onEd
     }
   }
 
-  const confirmedCount = attendees.filter((a) => a.status === 'confirmed').length;
+  const confirmedAttendees = attendees.filter((a) => a.status === 'confirmed');
+  const confirmedCount = confirmedAttendees.length;
+  const gradesPresent = GRADES.filter((g) => confirmedAttendees.some((a) => a.profiles?.grade === g));
+  const filteredAttendees = gradeFilter
+    ? confirmedAttendees.filter((a) => a.profiles?.grade === gradeFilter)
+    : confirmedAttendees;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end fade-in" style={{ background: 'rgba(2,64,120,0.45)' }} onClick={onClose}>
@@ -113,19 +120,54 @@ export default function ActivityModal({ activity, profile, groups, onClose, onEd
 
           {showAttendees && (
             <div className="rounded-2xl p-3 mb-4" style={{ background: '#f0f9ff', border: '1px solid #bae6fd' }}>
-              {attendees.filter((a) => a.status === 'confirmed').length === 0 ? (
+              {confirmedCount === 0 ? (
                 <p className="text-sm text-center font-medium" style={{ color: '#7dd3fc' }}>אין מאשרים עדיין 🤷</p>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {attendees.filter((a) => a.status === 'confirmed').map((a) => (
-                    <div key={a.id} className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1 shadow-sm">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-black" style={{ background: 'linear-gradient(135deg, #0284c7, #06b6d4)' }}>
-                        {a.profiles?.full_name?.[0] ?? '?'}
-                      </div>
-                      <span className="text-sm font-medium" style={{ color: '#0369a1' }}>{a.profiles?.full_name}</span>
+                <>
+                  {/* Grade filter chips */}
+                  {gradesPresent.length > 0 && (
+                    <div className="flex gap-1.5 flex-wrap mb-3">
+                      <button
+                        onClick={() => setGradeFilter(null)}
+                        className="px-2.5 py-1 rounded-lg text-xs font-black transition-all"
+                        style={!gradeFilter
+                          ? { background: '#0284c7', color: 'white' }
+                          : { background: 'white', color: '#0369a1', border: '1px solid #bae6fd' }
+                        }
+                      >
+                        הכל
+                      </button>
+                      {gradesPresent.map((g) => (
+                        <button
+                          key={g}
+                          onClick={() => setGradeFilter(gradeFilter === g ? null : g)}
+                          className="px-2.5 py-1 rounded-lg text-xs font-black transition-all"
+                          style={gradeFilter === g
+                            ? { background: '#0284c7', color: 'white' }
+                            : { background: 'white', color: '#0369a1', border: '1px solid #bae6fd' }
+                          }
+                        >
+                          כיתה {g}
+                        </button>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {filteredAttendees.map((a) => (
+                      <div key={a.id} className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1 shadow-sm">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-black" style={{ background: 'linear-gradient(135deg, #0284c7, #06b6d4)' }}>
+                          {a.profiles?.full_name?.[0] ?? '?'}
+                        </div>
+                        <span className="text-sm font-medium" style={{ color: '#0369a1' }}>{a.profiles?.full_name}</span>
+                        {a.profiles?.grade && (
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md" style={{ background: '#e0f2fe', color: '#0284c7' }}>
+                            {a.profiles.grade}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}

@@ -22,8 +22,12 @@ create table if not exists profiles (
   role text not null default 'youth' check (role in ('guide', 'youth')),
   approved boolean not null default false,
   group_id uuid references groups(id) on delete set null,
+  grade text check (grade in ('ז', 'ח', 'ט', 'י', 'יא', 'יב')),
   created_at timestamptz default now()
 );
+
+-- Migration: run this if the table already exists
+-- alter table profiles add column if not exists grade text check (grade in ('ז', 'ח', 'ט', 'י', 'יא', 'יב'));
 
 -- Activities table
 create table if not exists activities (

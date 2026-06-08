@@ -2,6 +2,9 @@ export type Role = 'guide' | 'youth';
 export type AttendanceStatus = 'confirmed' | 'cancelled';
 export type CalendarView = 'month' | 'day';
 
+export type Grade = 'ז' | 'ח' | 'ט' | 'י' | 'יא' | 'יב';
+export const GRADES: Grade[] = ['ז', 'ח', 'ט', 'י', 'יא', 'יב'];
+
 export interface Profile {
   id: string;
   client_id: string;
@@ -9,6 +12,7 @@ export interface Profile {
   role: Role;
   approved: boolean;
   group_id: string | null;
+  grade: Grade | null;
   created_at: string;
 }
 
