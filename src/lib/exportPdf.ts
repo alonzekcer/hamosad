@@ -70,7 +70,7 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
           const br = `${isRealEnd ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealEnd ? 4 : 0}px`;
           const ml = isRealEnd ? 2 : 0;
           const mr = isRealStart ? 2 : 0;
-          return `<div style="grid-row:${idx + 1};grid-column:${colStart}/${colEnd + 1};background:${act.color};border-radius:${br};color:white;font-size:11px;font-weight:800;margin-left:${ml}px;margin-right:${mr}px;height:26px;line-height:26px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;box-sizing:border-box;">${act.title}</div>`;
+          return `<div style="grid-row:${idx + 1};grid-column:${colStart}/${colEnd + 1};background:${act.color};border-radius:${br};color:white;font-size:13px;font-weight:900;margin-left:${ml}px;margin-right:${mr}px;height:26px;line-height:26px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;box-sizing:border-box;">${act.title}</div>`;
         }).join('')}
       </div>` : '';
 
@@ -82,7 +82,7 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
       const isCurrentMonth = day.getMonth() === month;
       const chips = dayActs.slice(0, 3).map((a) => `
         <div style="background:${a.color};color:white;border-radius:5px;margin-bottom:3px;display:flex;align-items:center;justify-content:center;min-height:26px;padding:3px 5px;box-sizing:border-box;">
-          <div style="font-size:10px;font-weight:700;line-height:1.3;word-break:break-word;white-space:normal;text-align:center;width:100%;">${a.title}</div>
+          <div style="font-size:13px;font-weight:900;line-height:1.3;word-break:break-word;white-space:normal;text-align:center;width:100%;">${a.title}</div>
         </div>`).join('');
       const extra = dayActs.length > 3 ? `<div style="font-size:9px;color:#0284c7;font-weight:800;">+${dayActs.length - 3}</div>` : '';
       return `
