@@ -70,8 +70,8 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
           const br = `${isRealEnd ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealEnd ? 4 : 0}px`;
           const ml = isRealEnd ? 2 : 0;
           const mr = isRealStart ? 2 : 0;
-          return `<div style="grid-row:${idx + 1};grid-column:${colStart}/${colEnd + 1};background:${act.color};border-radius:${br};color:white;font-size:9px;font-weight:800;padding:0 6px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:${ml}px;margin-right:${mr}px;">
-            ${isRealStart ? act.title : ''}
+          return `<div style="grid-row:${idx + 1};grid-column:${colStart}/${colEnd + 1};background:${act.color};border-radius:${br};color:white;font-size:9px;font-weight:800;overflow:hidden;margin-left:${ml}px;margin-right:${mr}px;display:flex;align-items:center;justify-content:center;">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 6px;">${act.title}</span>
           </div>`;
         }).join('')}
       </div>` : '';
