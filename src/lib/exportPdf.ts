@@ -64,15 +64,13 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
     const bars = getWeekBars(multiDayActs, week);
 
     const multiDayStrip = bars.length > 0 ? `
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:22px;gap:3px 0;padding:3px 0;border-bottom:1px solid #e0f2fe;flex-shrink:0;">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:26px;gap:3px 0;padding:3px 2px;border-bottom:1px solid #e0f2fe;flex-shrink:0;">
         ${bars.map((bar, idx) => {
           const { act, colStart, colEnd, isRealStart, isRealEnd } = bar;
           const br = `${isRealEnd ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealEnd ? 4 : 0}px`;
           const ml = isRealEnd ? 2 : 0;
           const mr = isRealStart ? 2 : 0;
-          return `<div style="grid-row:${idx + 1};grid-column:${colStart}/${colEnd + 1};background:${act.color};border-radius:${br};color:white;font-size:9px;font-weight:800;overflow:hidden;margin-left:${ml}px;margin-right:${mr}px;display:flex;align-items:center;justify-content:center;">
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 6px;">${act.title}</span>
-          </div>`;
+          return `<div style="grid-row:${idx + 1};grid-column:${colStart}/${colEnd + 1};background:${act.color};border-radius:${br};color:white;font-size:11px;font-weight:800;margin-left:${ml}px;margin-right:${mr}px;height:26px;line-height:26px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;box-sizing:border-box;">${act.title}</div>`;
         }).join('')}
       </div>` : '';
 
