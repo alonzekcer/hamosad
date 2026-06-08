@@ -24,8 +24,8 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
       const acts = activitiesForDay(activities, day);
       const isCurrentMonth = day.getMonth() === month;
       const chips = acts.slice(0, 3).map((a) => `
-        <div style="background:${a.color};color:white;border-radius:5px;padding:3px 6px;margin-bottom:3px;direction:rtl;">
-          <div style="font-size:11px;font-weight:700;line-height:1.3;word-break:break-word;">${a.title}</div>
+        <div style="background:${a.color};color:white;border-radius:5px;padding:4px 6px;margin-bottom:3px;direction:rtl;text-align:center;">
+          <div style="font-size:11px;font-weight:700;line-height:1.4;word-break:break-word;white-space:normal;overflow:visible;">${a.title}</div>
         </div>`).join('');
       const extra = acts.length > 3 ? `<div style="font-size:10px;color:#0284c7;font-weight:700;padding-right:2px;">+${acts.length - 3} עוד</div>` : '';
       return `
