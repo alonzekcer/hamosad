@@ -11,6 +11,7 @@ export const ACTIVITY_COLORS = [
   '#8b5cf6', // בתוך המועדון
   '#22c55e', // מחוץ למועדון
   '#38bdf8', // בריכה
+  '#1d4ed8', // שומר צעיר
 ];
 
 export const ACTIVITY_COLOR_LABELS: Record<string, string> = {
@@ -18,6 +19,7 @@ export const ACTIVITY_COLOR_LABELS: Record<string, string> = {
   '#8b5cf6': '🏠 מועדון',
   '#22c55e': '🌳 חוץ מועדון',
   '#38bdf8': '🏊 בריכה',
+  '#1d4ed8': '⭐ שומר צעיר',
 };
 
 export const CLIENT_ID_KEY = 'hamosad_client_id';
