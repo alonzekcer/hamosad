@@ -21,6 +21,7 @@ export default function AdminPage() {
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
   const [pendingGrades, setPendingGrades] = useState<Record<string, string>>({});
   const [usersGradeFilter, setUsersGradeFilter] = useState<string | null>(null);
+  const [approving, setApproving] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -44,8 +45,15 @@ export default function AdminPage() {
   }
 
   async function handleApprove(id: string) {
-    await approveProfile(id, pendingGrades[id]);
-    if (profile) await loadAll(profile.id);
+    setApproving(id);
+    try {
+      await approveProfile(id, pendingGrades[id] || undefined);
+      if (profile) await loadAll(profile.id);
+    } catch (e) {
+      alert('שגיאה באישור: ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setApproving(null);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -151,12 +159,14 @@ export default function AdminPage() {
 
                 <div className="flex gap-2">
                   <button onClick={() => handleApprove(u.id)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-black text-white active:scale-95 transition-all"
+                    disabled={approving === u.id}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-black text-white active:scale-95 transition-all disabled:opacity-60"
                     style={{ background: 'linear-gradient(135deg,#0284c7,#06b6d4)' }}>
-                    אשר
+                    {approving === u.id ? '...' : 'אשר'}
                   </button>
                   <button onClick={() => handleDelete(u.id)}
-                    className="py-2.5 px-4 rounded-xl text-sm font-black active:scale-95 transition-all"
+                    disabled={approving === u.id}
+                    className="py-2.5 px-4 rounded-xl text-sm font-black active:scale-95 transition-all disabled:opacity-60"
                     style={{ border: '2px solid #fca5a5', color: '#ef4444' }}>
                     דחה
                   </button>
