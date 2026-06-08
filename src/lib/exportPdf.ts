@@ -1,4 +1,4 @@
-import { getMonthGrid, activitiesForDay, formatTimeHebrew } from './calendarUtils';
+import { getMonthGrid, activitiesForDay, isMultiDayActivity } from './calendarUtils';
 import { HEBREW_MONTHS } from './constants';
 import type { Activity } from '@/types';
 
@@ -13,28 +13,94 @@ const COLOR_LABELS: Record<string, string> = {
   '#1d4ed8': 'שומר צעיר',
 };
 
+interface WeekBar {
+  act: Activity;
+  colStart: number;
+  colEnd: number;
+  isRealStart: boolean;
+  isRealEnd: boolean;
+}
+
+function getWeekBars(multiDayActs: Activity[], week: (Date | null)[]): WeekBar[] {
+  const realDays = week.filter(Boolean) as Date[];
+  if (realDays.length === 0) return [];
+  const firstDay = realDays[0];
+  const weekSun = new Date(firstDay);
+  weekSun.setDate(firstDay.getDate() - firstDay.getDay());
+  weekSun.setHours(0, 0, 0, 0);
+  const weekThu = new Date(weekSun);
+  weekThu.setDate(weekSun.getDate() + 4);
+  weekThu.setHours(0, 0, 0, 0);
+
+  return multiDayActs
+    .filter((act) => {
+      const s = new Date(act.start_time); s.setHours(0, 0, 0, 0);
+      const e = new Date(act.end_time); e.setHours(0, 0, 0, 0);
+      return s <= weekThu && e >= weekSun;
+    })
+    .map((act) => {
+      const actStart = new Date(act.start_time); actStart.setHours(0, 0, 0, 0);
+      const actEnd = new Date(act.end_time); actEnd.setHours(0, 0, 0, 0);
+      const cs = actStart < weekSun ? weekSun : actStart;
+      const ce = actEnd > weekThu ? weekThu : actEnd;
+      return {
+        act,
+        colStart: cs.getDay() + 1,
+        colEnd: ce.getDay() + 1,
+        isRealStart: actStart.getTime() === cs.getTime(),
+        isRealEnd: actEnd.getTime() === ce.getTime(),
+      };
+    });
+}
+
 function buildMonthHTML(month: number, year: number, activities: Activity[]): string {
   const grid = getMonthGrid(year, month);
   const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'];
-  const rowH = Math.floor(490 / 6);
 
-  const rows = grid.map((week) => {
+  const singleDayActs = activities.filter((a) => !isMultiDayActivity(a));
+  const multiDayActs = activities.filter(isMultiDayActivity);
+
+  const weeksHTML = grid.map((week, wi) => {
+    const bars = getWeekBars(multiDayActs, week);
+
+    const multiDayStrip = bars.length > 0 ? `
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:18px;gap:2px 0;padding:2px 0;border-bottom:1px solid #e0f2fe;flex-shrink:0;">
+        ${bars.map((bar, idx) => {
+          const { act, colStart, colEnd, isRealStart, isRealEnd } = bar;
+          const br = `${isRealEnd ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealEnd ? 4 : 0}px`;
+          const ml = isRealEnd ? 2 : 0;
+          const mr = isRealStart ? 2 : 0;
+          return `<div style="grid-row:${idx + 1};grid-column:${colStart}/${colEnd + 1};background:${act.color};border-radius:${br};color:white;font-size:9px;font-weight:800;padding:0 6px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:${ml}px;margin-right:${mr}px;">
+            ${isRealStart ? act.title : ''}
+          </div>`;
+        }).join('')}
+      </div>` : '';
+
     const cells = week.map((day, di) => {
-      if (!day) return `<td style="border-right:${di < 4 ? '1px solid #bae6fd' : 'none'};background:#f0f9ff;"></td>`;
-      const acts = activitiesForDay(activities, day);
+      if (!day) {
+        return `<div style="border-right:${di < 4 ? '1px solid #e0f2fe' : 'none'};background:#f8fbff;"></div>`;
+      }
+      const dayActs = activitiesForDay(singleDayActs, day);
       const isCurrentMonth = day.getMonth() === month;
-      const chips = acts.slice(0, 3).map((a) => `
-        <div style="background:${a.color};color:white;border-radius:5px;padding:4px 6px;margin-bottom:3px;direction:rtl;text-align:center;">
-          <div style="font-size:11px;font-weight:700;line-height:1.4;word-break:break-word;white-space:normal;overflow:visible;">${a.title}</div>
+      const chips = dayActs.slice(0, 3).map((a) => `
+        <div style="background:${a.color};color:white;border-radius:5px;padding:3px 6px;margin-bottom:3px;text-align:center;">
+          <div style="font-size:10px;font-weight:700;line-height:1.4;word-break:break-word;white-space:normal;">${a.title}</div>
         </div>`).join('');
-      const extra = acts.length > 3 ? `<div style="font-size:10px;color:#0284c7;font-weight:700;padding-right:2px;">+${acts.length - 3} עוד</div>` : '';
+      const extra = dayActs.length > 3 ? `<div style="font-size:9px;color:#0284c7;font-weight:800;">+${dayActs.length - 3}</div>` : '';
       return `
-        <td style="border-right:${di < 4 ? '1px solid #bae6fd' : 'none'};background:white;padding:5px 4px;vertical-align:top;opacity:${isCurrentMonth ? 1 : 0.25};overflow:hidden;height:${rowH}px;">
-          <div style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px;text-align:right;">${day.getDate()}</div>
+        <div style="border-right:${di < 4 ? '1px solid #e0f2fe' : 'none'};background:white;padding:4px 3px;opacity:${isCurrentMonth ? 1 : 0.2};overflow:hidden;display:flex;flex-direction:column;">
+          <div style="font-size:12px;font-weight:800;color:#0369a1;margin-bottom:3px;text-align:right;">${day.getDate()}</div>
           ${chips}${extra}
-        </td>`;
+        </div>`;
     }).join('');
-    return `<tr style="height:${rowH}px;">${cells}</tr>`;
+
+    return `
+      <div style="flex:1;display:flex;flex-direction:column;border-bottom:${wi < grid.length - 1 ? '1.5px solid #bae6fd' : 'none'};">
+        ${multiDayStrip}
+        <div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);overflow:hidden;">
+          ${cells}
+        </div>
+      </div>`;
   }).join('');
 
   const legend = Object.entries(COLOR_LABELS).map(([c, l]) => `
@@ -43,6 +109,10 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
       <span style="font-size:11px;color:#0369a1;font-weight:600;">${l}</span>
     </div>`).join('');
 
+  const dayHeaders = dayNames.map((d, i) => `
+    <div style="text-align:center;color:white;font-weight:700;padding:8px 4px;font-size:13px;border-right:${i < 4 ? '1px solid rgba(255,255,255,0.2)' : 'none'};">${d}</div>`
+  ).join('');
+
   return `
     <div style="width:1060px;height:750px;background:white;direction:rtl;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;overflow:hidden;">
       <div style="background:linear-gradient(135deg,#0284c7,#06b6d4);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
@@ -50,16 +120,11 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
         <div style="color:white;font-size:26px;font-weight:900;letter-spacing:1px;">${HEBREW_MONTHS[month]} ${year} 🌊</div>
         <div style="display:flex;gap:14px;">${legend}</div>
       </div>
-      <table style="width:100%;border-collapse:collapse;flex-shrink:0;">
-        <tr style="background:#0369a1;">
-          ${dayNames.map((d, i) => `<th style="text-align:center;color:white;font-weight:700;padding:8px 4px;font-size:13px;border-right:${i < 4 ? '1px solid rgba(255,255,255,0.2)' : 'none'};width:20%;">${d}</th>`).join('')}
-        </tr>
-      </table>
-      <div style="flex:1;border:2px solid #bae6fd;border-top:none;overflow:hidden;">
-        <table style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;">
-          <colgroup>${[0,1,2,3,4].map(() => '<col style="width:20%">').join('')}</colgroup>
-          <tbody>${rows}</tbody>
-        </table>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);background:#0369a1;flex-shrink:0;">
+        ${dayHeaders}
+      </div>
+      <div style="flex:1;border:2px solid #bae6fd;border-top:none;overflow:hidden;display:flex;flex-direction:column;">
+        ${weeksHTML}
       </div>
     </div>`;
 }
