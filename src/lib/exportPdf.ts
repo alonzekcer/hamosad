@@ -83,8 +83,8 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
       const dayActs = activitiesForDay(singleDayActs, day);
       const isCurrentMonth = day.getMonth() === month;
       const chips = dayActs.slice(0, 3).map((a) => `
-        <div style="background:${a.color};color:white;border-radius:5px;padding:3px 6px;margin-bottom:3px;text-align:center;">
-          <div style="font-size:10px;font-weight:700;line-height:1.4;word-break:break-word;white-space:normal;">${a.title}</div>
+        <div style="background:${a.color};color:white;border-radius:5px;margin-bottom:3px;display:flex;align-items:center;justify-content:center;min-height:26px;padding:3px 5px;box-sizing:border-box;">
+          <div style="font-size:10px;font-weight:700;line-height:1.3;word-break:break-word;white-space:normal;text-align:center;width:100%;">${a.title}</div>
         </div>`).join('');
       const extra = dayActs.length > 3 ? `<div style="font-size:9px;color:#0284c7;font-weight:800;">+${dayActs.length - 3}</div>` : '';
       return `
