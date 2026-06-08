@@ -64,7 +64,7 @@ function buildMonthHTML(month: number, year: number, activities: Activity[]): st
     const bars = getWeekBars(multiDayActs, week);
 
     const multiDayStrip = bars.length > 0 ? `
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:18px;gap:2px 0;padding:2px 0;border-bottom:1px solid #e0f2fe;flex-shrink:0;">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:22px;gap:3px 0;padding:3px 0;border-bottom:1px solid #e0f2fe;flex-shrink:0;">
         ${bars.map((bar, idx) => {
           const { act, colStart, colEnd, isRealStart, isRealEnd } = bar;
           const br = `${isRealEnd ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealStart ? 4 : 0}px ${isRealEnd ? 4 : 0}px`;
