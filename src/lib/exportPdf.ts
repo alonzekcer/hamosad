@@ -10,6 +10,7 @@ const COLOR_LABELS: Record<string, string> = {
   '#8b5cf6': 'מועדון',
   '#22c55e': 'חוץ מועדון',
   '#38bdf8': 'בריכה',
+  '#1d4ed8': 'שומר צעיר',
 };
 
 function buildMonthHTML(month: number, year: number, activities: Activity[]): string {
