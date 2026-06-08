@@ -19,8 +19,14 @@ function getTimeStr(iso: string) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function combineDateTime(baseIso: string, timeStr: string): string {
-  const base = new Date(baseIso);
+function getDateMidnight(iso: string): Date {
+  const d = new Date(iso);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function combineDateTime(dateIso: string, timeStr: string): string {
+  const base = new Date(dateIso);
   const [h, m] = timeStr.split(':').map(Number);
   base.setHours(h, m, 0, 0);
   return base.toISOString();
@@ -28,7 +34,6 @@ function combineDateTime(baseIso: string, timeStr: string): string {
 
 function CompactTimePicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const [h, m] = value.split(':').map(Number);
-
   const setH = (delta: number) => {
     const newH = Math.max(6, Math.min(23, h + delta));
     onChange(`${pad(newH)}:${pad(m)}`);
@@ -38,21 +43,17 @@ function CompactTimePicker({ label, value, onChange }: { label: string; value: s
   return (
     <div className="flex flex-col items-center gap-1.5">
       <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: 0.5 }}>{label}</span>
-
       <div className="flex items-center gap-2">
         <button type="button" onClick={() => setH(-1)}
           className="w-7 h-7 rounded-full flex items-center justify-center font-bold active:scale-90 transition-transform"
           style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 17 }}>−</button>
-
         <span style={{ fontSize: 24, fontWeight: 900, color: '#0c4a6e', minWidth: 58, textAlign: 'center', letterSpacing: 1 }}>
           {pad(h)}<span style={{ color: '#cbd5e1' }}>:</span>{pad(m)}
         </span>
-
         <button type="button" onClick={() => setH(1)}
           className="w-7 h-7 rounded-full flex items-center justify-center font-bold active:scale-90 transition-transform"
           style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 17 }}>+</button>
       </div>
-
       <div className="flex gap-1 w-full">
         {[0, 15, 30, 45].map((mins) => (
           <button key={mins} type="button" onClick={() => setM(mins)}
@@ -72,25 +73,56 @@ function CompactTimePicker({ label, value, onChange }: { label: string; value: s
 }
 
 export default function ActivityForm({ initial, groups, profileId, onSave, onCancel }: ActivityFormProps) {
-  const baseDateIso = initial?.start_time ?? new Date().toISOString();
-  const baseDate = new Date(baseDateIso);
-  const dateLabel = `${baseDate.getDate()} ${HEBREW_MONTHS[baseDate.getMonth()]}`;
+  const startIsoBase = initial?.start_time ?? new Date().toISOString();
+  const startDate = new Date(startIsoBase);
+  const startDateLabel = `${startDate.getDate()} ${HEBREW_MONTHS[startDate.getMonth()]}`;
+
+  const initialEndIso = initial?.end_time ?? startIsoBase;
+  const startMidnight = getDateMidnight(startIsoBase);
+  const endMidnight = getDateMidnight(initialEndIso);
+  const isInitiallyMultiDay = startMidnight.getTime() !== endMidnight.getTime();
 
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
-  const [startTime, setStartTime] = useState(initial?.start_time ? getTimeStr(initial.start_time) : '09:00');
-  const [endTime, setEndTime] = useState(initial?.end_time ? getTimeStr(initial.end_time) : '11:00');
+  const [startTime, setStartTime] = useState(getTimeStr(startIsoBase));
+  const [endTime, setEndTime] = useState(getTimeStr(initialEndIso));
   const [location, setLocation] = useState(initial?.location ?? '');
   const [color, setColor] = useState(initial?.color ?? ACTIVITY_COLORS[0]);
+  const [isMultiDay, setIsMultiDay] = useState(isInitiallyMultiDay);
+  const [endDateBase, setEndDateBase] = useState(isInitiallyMultiDay ? initialEndIso : (() => {
+    const next = new Date(startIsoBase);
+    next.setDate(next.getDate() + 1);
+    return next.toISOString();
+  })());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function handleMultiDayToggle() {
+    setIsMultiDay((prev) => !prev);
+  }
+
+  function moveEndDate(delta: number) {
+    const d = new Date(endDateBase);
+    d.setDate(d.getDate() + delta);
+    d.setHours(0, 0, 0, 0);
+    const minDate = new Date(startIsoBase);
+    minDate.setDate(minDate.getDate() + 1);
+    minDate.setHours(0, 0, 0, 0);
+    const maxDate = new Date(2026, 7, 31);
+    if (d >= minDate && d <= maxDate) setEndDateBase(d.toISOString());
+  }
+
+  const endDateObj = new Date(endDateBase);
+
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
     if (!title.trim()) { setError('יש למלא שם פעילות'); return; }
-    const startIso = combineDateTime(baseDateIso, startTime);
-    const endIso = combineDateTime(baseDateIso, endTime);
-    if (new Date(startIso) >= new Date(endIso)) { setError('שעת הסיום חייבת להיות אחרי ההתחלה'); return; }
+    const startIso = combineDateTime(startIsoBase, startTime);
+    const endIso = combineDateTime(isMultiDay ? endDateBase : startIsoBase, endTime);
+    if (!isMultiDay && new Date(startIso) >= new Date(endIso)) {
+      setError('שעת הסיום חייבת להיות אחרי ההתחלה');
+      return;
+    }
     setSaving(true); setError('');
     try {
       await onSave({
@@ -116,32 +148,28 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
         style={{ maxHeight: '85vh', boxShadow: '0 -4px 24px rgba(0,0,0,0.14)' }}
         onClick={(e) => e.stopPropagation()}>
 
-        {/* Handle */}
         <div className="flex justify-center pt-2.5 pb-1">
           <div className="w-8 h-1 rounded-full" style={{ background: '#e2e8f0' }} />
         </div>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
           <div>
             <h2 className="font-black text-sm" style={{ color: '#0c4a6e' }}>
               {initial?.id ? 'עריכה' : 'פעילות חדשה'}
             </h2>
-            <p style={{ fontSize: 11, color: '#94a3b8' }}>{dateLabel}</p>
+            <p style={{ fontSize: 11, color: '#94a3b8' }}>{startDateLabel}</p>
           </div>
           <button onClick={onCancel}
             className="w-7 h-7 rounded-full flex items-center justify-center"
             style={{ background: '#f1f5f9' }}>
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth={2.5} strokeLinecap="round">
-              <path d="M18 6L6 18M6 6l12 12"/>
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
 
-          {/* Title */}
           <input
             type="text"
             value={title}
@@ -156,7 +184,7 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
             }}
           />
 
-          {/* Times — side by side */}
+          {/* Times */}
           <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}>
             <div className="grid grid-cols-2 gap-3">
               <CompactTimePicker label="התחלה" value={startTime} onChange={setStartTime} />
@@ -164,12 +192,57 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
             </div>
           </div>
 
-          {/* Location — compact */}
+          {/* Multi-day toggle */}
+          <div
+            className="flex items-center justify-between rounded-xl px-3 py-2.5"
+            style={{ border: '1.5px solid #e2e8f0', background: '#f8fafc' }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#0c4a6e' }}>פעילות רב-יומית</span>
+            <button
+              type="button"
+              onClick={handleMultiDayToggle}
+              className="relative w-11 h-6 rounded-full transition-colors duration-200"
+              style={{ background: isMultiDay ? '#0284c7' : '#cbd5e1' }}
+            >
+              <span
+                className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
+                style={{ right: isMultiDay ? 2 : 22 }}
+              />
+            </button>
+          </div>
+
+          {/* End date picker */}
+          {isMultiDay && (
+            <div
+              className="flex items-center justify-between rounded-xl px-3 py-2.5"
+              style={{ border: '1.5px solid #bae6fd', background: '#f0f9ff' }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#0369a1' }}>תאריך סיום</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => moveEndDate(-1)}
+                  className="w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                  style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 17 }}
+                >−</button>
+                <span style={{ fontSize: 15, fontWeight: 900, color: '#0c4a6e', minWidth: 70, textAlign: 'center' }}>
+                  {endDateObj.getDate()} {HEBREW_MONTHS[endDateObj.getMonth()]}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => moveEndDate(1)}
+                  className="w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                  style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 17 }}
+                >+</button>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
             style={{ border: '1.5px solid #e2e8f0', background: '#f8fafc' }}>
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth={2}>
-              <path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <input
               type="text"
@@ -181,7 +254,6 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
             />
           </div>
 
-          {/* Description — compact */}
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -195,7 +267,6 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
             }}
           />
 
-          {/* Activity type — compact 2x2 */}
           <div className="grid grid-cols-2 gap-1.5">
             {ACTIVITY_COLORS.map((c) => (
               <button key={c} type="button" onClick={() => setColor(c)}
@@ -217,9 +288,8 @@ export default function ActivityForm({ initial, groups, profileId, onSave, onCan
           )}
         </form>
 
-        {/* Save */}
         <div className="px-4 pb-7 pt-2" style={{ borderTop: '1px solid #f1f5f9' }}>
-          <button onClick={handleSubmit} disabled={saving}
+          <button onClick={() => handleSubmit()} disabled={saving}
             className="w-full py-3 rounded-2xl font-black text-white text-sm active:scale-[0.98] transition-all disabled:opacity-50"
             style={{ background: saving ? '#94a3b8' : 'linear-gradient(135deg,#0284c7,#06b6d4)' }}>
             {saving ? 'שומר...' : initial?.id ? 'שמור שינויים' : 'הוסף פעילות'}

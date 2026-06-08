@@ -48,18 +48,19 @@ No Supabase Auth. Identity is a UUID (`client_id`) stored in `localStorage` unde
 |-------|--------|---------|
 | `/` | any | checks auth, redirects to `/calendar` or `/login` |
 | `/login` | any | name entry + optional guide code |
-| `/calendar` | approved users | main calendar (month/week/day views) |
-| `/admin` | guides only | approve users, manage sharing, export PDF |
+| `/calendar` | approved users | main calendar (month/day views); PDF export button for guides |
+| `/admin` | guides only | approve users ("ממתינים"), manage all users ("משתמשים") |
 | `/public/[token]` | no auth | read-only calendar via shareable link |
 
 ### Key files
 
-- `src/lib/auth.ts` — `getOrCreateClientId`, `getProfile`, `registerProfile`
+- `src/lib/auth.ts` — `getOrCreateClientId`, `getProfile`, `registerProfile`. `registerProfile` also re-links an existing profile by name, so the same person on a new device keeps their account.
 - `src/lib/db.ts` — all Supabase queries (activities, groups, attendance, profiles, public links)
 - `src/lib/supabase.ts` — Supabase client singleton
 - `src/lib/constants.ts` — Hebrew strings, activity colors, `CLIENT_ID_KEY`, `GUIDE_CODE`
 - `src/lib/calendarUtils.ts` — calendar grid computation, `activitiesForDay`, time formatting
-- `src/types/index.ts` — shared TypeScript types: `Profile`, `Group`, `Activity`, `Attendance`, `PublicLink`
+- `src/lib/exportPdf.ts` — PDF export using jsPDF + html2canvas; `SUMMER_YEAR` and `SUMMER_MONTHS` are hardcoded here
+- `src/types/index.ts` — shared TypeScript types: `Profile`, `Group`, `Activity`, `Attendance`, `PublicLink`. `CalendarView = 'month' | 'day'` (no week view).
 
 ### Data model (Supabase)
 
@@ -73,4 +74,4 @@ All tables use permissive RLS (`using (true)`) — intentional for an internal t
 
 ### PDF export
 
-`/admin` → "שיתוף" tab renders `PrintCalendar` into a hidden iframe and calls `window.print()`. It fetches June–August 2026 activities. The year (`SUMMER_YEAR = 2026`) is hardcoded in `src/app/admin/page.tsx:19`.
+Visible to guides only in month view (bottom of `/calendar`). Calls `exportCalendarPDF` in `src/lib/exportPdf.ts`, which builds HTML for each summer month, renders it off-screen, captures with html2canvas, and assembles a landscape A4 PDF via jsPDF. `SUMMER_YEAR = 2026` and `SUMMER_MONTHS = [5, 6, 7]` are hardcoded in `src/lib/exportPdf.ts:5-6`.

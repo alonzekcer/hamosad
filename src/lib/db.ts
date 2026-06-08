@@ -7,8 +7,8 @@ export async function fetchActivities(start: Date, end: Date): Promise<Activity[
   const { data, error } = await supabase
     .from('activities')
     .select('*')
-    .gte('start_time', start.toISOString())
     .lte('start_time', end.toISOString())
+    .gte('end_time', start.toISOString())
     .order('start_time');
   if (error) throw error;
   return data ?? [];

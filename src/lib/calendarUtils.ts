@@ -48,10 +48,43 @@ export function getWeekDays(date: Date): Date[] {
 }
 
 export function activitiesForDay(activities: Activity[], day: Date): Activity[] {
+  const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
   return activities.filter((a) => {
-    const actDate = new Date(a.start_time);
-    return isSameDay(actDate, day);
+    return new Date(a.start_time) <= dayEnd && new Date(a.end_time) >= dayStart;
   });
+}
+
+export function isMultiDayActivity(act: Activity): boolean {
+  const s = new Date(act.start_time); s.setHours(0, 0, 0, 0);
+  const e = new Date(act.end_time); e.setHours(0, 0, 0, 0);
+  return s.getTime() !== e.getTime();
+}
+
+// Returns chip style for multi-day spanning in RTL grid (Sun=right, Thu=left)
+export function getSpanChipStyle(act: Activity, day: Date): {
+  borderRadius: string; marginLeft: number; marginRight: number; showTitle: boolean;
+} {
+  if (!isMultiDayActivity(act)) {
+    return { borderRadius: '4px', marginLeft: 0, marginRight: 0, showTitle: true };
+  }
+  const s = new Date(act.start_time); s.setHours(0, 0, 0, 0);
+  const e = new Date(act.end_time); e.setHours(0, 0, 0, 0);
+  const d = new Date(day); d.setHours(0, 0, 0, 0);
+
+  const isRealStart = d.getTime() === s.getTime();
+  const isRealEnd = d.getTime() === e.getTime();
+  // Week boundaries (visual): Sun = right edge, Thu = left edge
+  const isWeekStart = day.getDay() === 0;
+  const isWeekEnd = day.getDay() === 4;
+
+  const isVisualStart = isRealStart || isWeekStart;
+  const isVisualEnd = isRealEnd || isWeekEnd;
+
+  if (isVisualStart && isVisualEnd) return { borderRadius: '4px', marginLeft: 0, marginRight: 0, showTitle: true };
+  if (isVisualStart) return { borderRadius: '0 4px 4px 0', marginLeft: -2, marginRight: 0, showTitle: true };
+  if (isVisualEnd) return { borderRadius: '4px 0 0 4px', marginLeft: 0, marginRight: -2, showTitle: false };
+  return { borderRadius: '0', marginLeft: -2, marginRight: -2, showTitle: false };
 }
 
 export function formatTimeHebrew(isoString: string): string {
