@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Activity, Attendance, Group, Profile, PublicLink } from '@/types';
+import type { Activity, Attendance, Group, Presence, Profile, PublicLink } from '@/types';
 
 // --- Activities ---
 
@@ -140,6 +140,50 @@ export async function approveProfile(id: string, grade?: string): Promise<void> 
 export async function rejectProfile(id: string): Promise<void> {
   const { error } = await supabase.from('profiles').delete().eq('id', id);
   if (error) throw error;
+}
+
+// --- Presence (guide roll call) ---
+
+export async function fetchActivityPresence(activityId: string): Promise<Presence[]> {
+  const { data, error } = await supabase
+    .from('presence')
+    .select('*')
+    .eq('activity_id', activityId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function upsertPresence(
+  activityId: string,
+  profileId: string,
+  present: boolean,
+  markedBy: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('presence')
+    .upsert(
+      { activity_id: activityId, profile_id: profileId, present, marked_by: markedBy, marked_at: new Date().toISOString() },
+      { onConflict: 'activity_id,profile_id' },
+    );
+  if (error) throw error;
+}
+
+export async function fetchAllPresence(): Promise<Presence[]> {
+  const { data, error } = await supabase.from('presence').select('*');
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchApprovedYouth(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'youth')
+    .eq('approved', true)
+    .order('grade')
+    .order('full_name');
+  if (error) throw error;
+  return data ?? [];
 }
 
 // --- Public links ---

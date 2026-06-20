@@ -101,7 +101,10 @@ export default function AdminPage() {
               <polyline points="9,18 15,12 9,6"/>
             </svg>
           </Link>
-          <h1 className="text-lg font-black text-white">ניהול</h1>
+          <h1 className="text-lg font-black text-white flex-1">ניהול</h1>
+          <Link href="/analytics" className="flex items-center gap-1 bg-white/20 rounded-xl px-3 py-1.5 text-white text-xs font-black active:bg-white/30">
+            📊 אנליטיקס
+          </Link>
         </div>
         <div className="flex gap-1 px-3 mt-3">
           {tabs.map((t) => (

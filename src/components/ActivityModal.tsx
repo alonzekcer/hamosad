@@ -6,6 +6,7 @@ import { HEBREW_DAYS_FULL, HEBREW_MONTHS } from '@/lib/constants';
 import { toggleAttendance, fetchActivityAttendance } from '@/lib/db';
 import type { Activity, Attendance, Profile } from '@/types';
 import { GRADES } from '@/types';
+import RollCall from './RollCall';
 
 type AttendanceStatus = 'confirmed' | 'cancelled';
 
@@ -24,6 +25,7 @@ export default function ActivityModal({ activity, profile, groups, onClose, onEd
   const [loading, setLoading] = useState(false);
   const [showAttendees, setShowAttendees] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<string | null>(null);
+  const [showRollCall, setShowRollCall] = useState(false);
 
   const startDate = new Date(activity.start_time);
   const dayName = HEBREW_DAYS_FULL[startDate.getDay()];
@@ -59,6 +61,7 @@ export default function ActivityModal({ activity, profile, groups, onClose, onEd
     : confirmedAttendees;
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex flex-col justify-end fade-in" style={{ background: 'rgba(2,64,120,0.45)' }} onClick={onClose}>
       <div className="rounded-t-3xl shadow-2xl slide-up max-h-[88vh] flex flex-col bg-white" onClick={(e) => e.stopPropagation()}>
         <div className="h-2 rounded-t-3xl" style={{ background: `linear-gradient(90deg, ${activity.color}, ${activity.color}88)` }} />
@@ -173,17 +176,26 @@ export default function ActivityModal({ activity, profile, groups, onClose, onEd
           )}
 
           {profile.role === 'guide' && (
-            <div className="flex gap-2 mb-3">
-              {onEdit && (
-                <button onClick={() => onEdit(activity)} className="flex-1 py-2.5 rounded-2xl font-bold text-sm active:scale-95 transition-all" style={{ border: '2px solid #0284c7', color: '#0284c7' }}>
-                  ✏️ ערוך
-                </button>
-              )}
-              {onDelete && (
-                <button onClick={() => { if (confirm('למחוק את הפעילות?')) onDelete(activity.id); }} className="py-2.5 px-4 rounded-2xl font-bold text-sm active:scale-95 transition-all" style={{ border: '2px solid #fca5a5', color: '#ef4444' }}>
-                  🗑️
-                </button>
-              )}
+            <div className="flex flex-col gap-2 mb-3">
+              <button
+                onClick={() => setShowRollCall(true)}
+                className="w-full py-2.5 rounded-2xl font-bold text-sm active:scale-95 transition-all text-white"
+                style={{ background: 'linear-gradient(135deg,#0284c7,#06b6d4)' }}
+              >
+                📋 קריאת שמות
+              </button>
+              <div className="flex gap-2">
+                {onEdit && (
+                  <button onClick={() => onEdit(activity)} className="flex-1 py-2.5 rounded-2xl font-bold text-sm active:scale-95 transition-all" style={{ border: '2px solid #0284c7', color: '#0284c7' }}>
+                    ✏️ ערוך
+                  </button>
+                )}
+                {onDelete && (
+                  <button onClick={() => { if (confirm('למחוק את הפעילות?')) onDelete(activity.id); }} className="py-2.5 px-4 rounded-2xl font-bold text-sm active:scale-95 transition-all" style={{ border: '2px solid #fca5a5', color: '#ef4444' }}>
+                    🗑️
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -206,5 +218,15 @@ export default function ActivityModal({ activity, profile, groups, onClose, onEd
         )}
       </div>
     </div>
+
+    {showRollCall && (
+      <RollCall
+        activityId={activity.id}
+        activityTitle={activity.title}
+        markedBy={profile.id}
+        onClose={() => setShowRollCall(false)}
+      />
+    )}
+    </>
   );
 }

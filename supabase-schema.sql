@@ -80,6 +80,25 @@ create policy "allow_all_activities" on activities for all using (true) with che
 create policy "allow_all_attendance" on attendance for all using (true) with check (true);
 create policy "allow_all_public_links" on public_links for all using (true) with check (true);
 
+-- Presence table (guide roll call — separate from self-reported RSVP)
+create table if not exists presence (
+  id uuid primary key default gen_random_uuid(),
+  activity_id uuid not null references activities(id) on delete cascade,
+  profile_id uuid not null references profiles(id) on delete cascade,
+  present boolean not null,
+  marked_by uuid references profiles(id) on delete set null,
+  marked_at timestamptz default now(),
+  unique(activity_id, profile_id)
+);
+
+alter table presence enable row level security;
+create policy "allow_all_presence" on presence for all using (true) with check (true);
+
+-- Migration: run this if tables already exist
+-- create table if not exists presence (id uuid primary key default gen_random_uuid(), activity_id uuid not null references activities(id) on delete cascade, profile_id uuid not null references profiles(id) on delete cascade, present boolean not null, marked_by uuid references profiles(id) on delete set null, marked_at timestamptz default now(), unique(activity_id, profile_id));
+-- alter table presence enable row level security;
+-- create policy "allow_all_presence" on presence for all using (true) with check (true);
+
 -- ========================
 -- Indexes
 -- ========================
@@ -88,3 +107,5 @@ create index if not exists idx_attendance_profile on attendance(profile_id);
 create index if not exists idx_attendance_activity on attendance(activity_id);
 create index if not exists idx_profiles_client_id on profiles(client_id);
 create index if not exists idx_public_links_token on public_links(token);
+create index if not exists idx_presence_activity on presence(activity_id);
+create index if not exists idx_presence_profile on presence(profile_id);

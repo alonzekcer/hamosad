@@ -45,6 +45,15 @@ export interface Attendance {
   created_at: string;
 }
 
+export interface Presence {
+  id: string;
+  activity_id: string;
+  profile_id: string;
+  present: boolean;
+  marked_by: string | null;
+  marked_at: string;
+}
+
 export interface PublicLink {
   id: string;
   token: string;
