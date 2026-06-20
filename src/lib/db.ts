@@ -125,6 +125,11 @@ export async function fetchAllProfiles(): Promise<Profile[]> {
   return data ?? [];
 }
 
+export async function updateProfileGrade(id: string, grade: string | null): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ grade }).eq('id', id);
+  if (error) throw error;
+}
+
 export async function approveProfile(id: string, grade?: string): Promise<void> {
   const payload: Record<string, unknown> = { approved: true };
   if (grade) payload.grade = grade;

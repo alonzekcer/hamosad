@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getOrCreateClientId, getProfile } from '@/lib/auth';
 import {
-  fetchPendingProfiles, fetchAllProfiles, approveProfile, rejectProfile,
+  fetchPendingProfiles, fetchAllProfiles, approveProfile, rejectProfile, updateProfileGrade,
 } from '@/lib/db';
 import type { Profile } from '@/types';
 import { GRADES } from '@/types';
@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [pendingGrades, setPendingGrades] = useState<Record<string, string>>({});
   const [usersGradeFilter, setUsersGradeFilter] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
+  const [editingGradeId, setEditingGradeId] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -60,6 +61,17 @@ export default function AdminPage() {
     if (!confirm('למחוק את המשתמש?')) return;
     await rejectProfile(id);
     if (profile) await loadAll(profile.id);
+  }
+
+  async function handleGradeChange(id: string, grade: string | null) {
+    try {
+      await updateProfileGrade(id, grade);
+      if (profile) await loadAll(profile.id);
+    } catch (e) {
+      alert('שגיאה בעדכון שכבה: ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setEditingGradeId(null);
+    }
   }
 
   if (loading || !profile) {
@@ -207,45 +219,76 @@ export default function AdminPage() {
             </div>
 
             {filteredUsers.map((u) => (
-              <div key={u.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3" style={{ border: '1px solid #bae6fd' }}>
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0"
-                  style={{ background: u.role === 'guide' ? 'linear-gradient(135deg,#0284c7,#06b6d4)' : '#38bdf8' }}
-                >
-                  {u.full_name[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-black truncate" style={{ color: '#0c4a6e' }}>{u.full_name}</div>
-                  <div className="text-xs flex items-center gap-1.5" style={{ color: '#38bdf8' }}>
-                    <span>{u.role === 'guide' ? 'מדריך' : 'נער'}</span>
-                    <span>·</span>
-                    <span>{u.approved ? 'מאושר' : 'ממתין'}</span>
-                    {u.grade && (
-                      <>
-                        <span>·</span>
-                        <span className="font-black" style={{ color: '#0284c7' }}>כיתה {u.grade}</span>
-                      </>
+              <div key={u.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm" style={{ border: '1px solid #bae6fd' }}>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0"
+                    style={{ background: u.role === 'guide' ? 'linear-gradient(135deg,#0284c7,#06b6d4)' : '#38bdf8' }}
+                  >
+                    {u.full_name[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-black truncate" style={{ color: '#0c4a6e' }}>{u.full_name}</div>
+                    <div className="text-xs flex items-center gap-1.5" style={{ color: '#38bdf8' }}>
+                      <span>{u.role === 'guide' ? 'מדריך' : 'נער'}</span>
+                      <span>·</span>
+                      <span>{u.approved ? 'מאושר' : 'ממתין'}</span>
+                      {u.role === 'youth' && (
+                        <button
+                          onClick={() => setEditingGradeId(editingGradeId === u.id ? null : u.id)}
+                          className="flex items-center gap-1 active:scale-95 transition-all"
+                        >
+                          <span>·</span>
+                          <span className="font-black" style={{ color: '#0284c7' }}>
+                            {u.grade ? `כיתה ${u.grade}` : '+ שכבה'}
+                          </span>
+                          <svg className={`w-3 h-3 transition-transform ${editingGradeId === u.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: '#0284c7' }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    {!u.approved && (
+                      <button onClick={() => handleApprove(u.id)}
+                        className="text-xs px-2.5 py-1.5 rounded-xl font-black text-white active:scale-95"
+                        style={{ background: 'linear-gradient(135deg,#0284c7,#06b6d4)' }}>
+                        אשר
+                      </button>
+                    )}
+                    {u.id !== profile.id && (
+                      <button onClick={() => handleDelete(u.id)}
+                        className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-95"
+                        style={{ background: '#fef2f2', color: '#ef4444' }}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-1.5 shrink-0">
-                  {!u.approved && (
-                    <button onClick={() => handleApprove(u.id)}
-                      className="text-xs px-2.5 py-1.5 rounded-xl font-black text-white active:scale-95"
-                      style={{ background: 'linear-gradient(135deg,#0284c7,#06b6d4)' }}>
-                      אשר
-                    </button>
-                  )}
-                  {u.id !== profile.id && (
-                    <button onClick={() => handleDelete(u.id)}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-95"
-                      style={{ background: '#fef2f2', color: '#ef4444' }}>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
+
+                {/* Inline grade editor */}
+                {editingGradeId === u.id && (
+                  <div className="mt-3 pt-3" style={{ borderTop: '1px solid #e0f2fe' }}>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {GRADES.map((g) => (
+                        <button
+                          key={g}
+                          onClick={() => handleGradeChange(u.id, u.grade === g ? null : g)}
+                          className="w-9 h-9 rounded-xl text-sm font-black transition-all active:scale-95"
+                          style={u.grade === g
+                            ? { background: 'linear-gradient(135deg,#0284c7,#06b6d4)', color: 'white' }
+                            : { background: '#f0f9ff', color: '#0369a1', border: '1.5px solid #bae6fd' }
+                          }
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
