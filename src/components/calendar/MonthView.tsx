@@ -69,7 +69,7 @@ export default function MonthView({ year, month, activities, onActivityClick, on
   return (
     <div className="flex flex-col flex-1 overflow-hidden p-2">
       <div
-        className="flex flex-col flex-1 rounded-3xl overflow-hidden"
+        className="flex flex-col flex-1 overflow-hidden"
         style={{
           border: '3px solid #0284c7',
           boxShadow: '0 8px 32px rgba(2,132,199,0.2), inset 0 1px 0 rgba(255,255,255,0.8)',
