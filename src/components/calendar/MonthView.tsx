@@ -176,6 +176,8 @@ export default function MonthView({ year, month, activities, onActivityClick, on
                     const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
                     const dayMidnight = new Date(day); dayMidnight.setHours(0,0,0,0);
                     const isPast = isCurrentMonth && !isToday && dayMidnight < todayMidnight;
+                    const programStart = new Date(2026, 5, 20);
+                    const isGreenDay = isPast && dayMidnight >= programStart;
                     const visible = dayActivities.slice(0, 3);
                     const extra = dayActivities.length - 3;
                     const hasActivities = dayActivities.length > 0;
@@ -187,7 +189,7 @@ export default function MonthView({ year, month, activities, onActivityClick, on
                         onClick={() => onDayClick(day)}
                         style={{
                           borderRight: di < 4 ? '1px solid #e0f2fe' : 'none',
-                          background: isToday ? '#dbeafe' : CELL_BG[di],
+                          background: isToday ? '#dbeafe' : isGreenDay ? '#f0fdf4' : CELL_BG[di],
                           padding: '3px 2px 2px',
                           opacity: isCurrentMonth ? 1 : 0.2,
                           display: 'flex',
