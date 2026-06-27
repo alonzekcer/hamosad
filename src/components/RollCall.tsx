@@ -17,20 +17,26 @@ export default function RollCall({ activityId, activityTitle, markedBy, onClose 
   const [presence, setPresence] = useState<Record<string, boolean | null>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [gradeFilter, setGradeFilter] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const [profiles, presenceData] = await Promise.all([
-        fetchApprovedYouth(),
-        fetchActivityPresence(activityId),
-      ]);
-      setYouth(profiles);
-      const map: Record<string, boolean | null> = {};
-      for (const p of profiles) map[p.id] = null;
-      for (const p of presenceData) map[p.profile_id] = p.present;
-      setPresence(map);
-      setLoading(false);
+      try {
+        const [profiles, presenceData] = await Promise.all([
+          fetchApprovedYouth(),
+          fetchActivityPresence(activityId),
+        ]);
+        setYouth(profiles);
+        const map: Record<string, boolean | null> = {};
+        for (const p of profiles) map[p.id] = null;
+        for (const p of presenceData) map[p.profile_id] = p.present;
+        setPresence(map);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [activityId]);
@@ -41,6 +47,8 @@ export default function RollCall({ activityId, activityTitle, markedBy, onClose 
     try {
       await upsertPresence(activityId, profileId, next, markedBy);
       setPresence((prev) => ({ ...prev, [profileId]: next }));
+    } catch (e) {
+      alert('שגיאה בשמירת נוכחות: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setSaving(null);
     }
@@ -115,6 +123,12 @@ export default function RollCall({ activityId, activityTitle, markedBy, onClose 
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-4xl animate-bounce">🌊</div>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 px-4 text-center">
+            <div className="text-4xl">⚠️</div>
+            <p className="font-black" style={{ color: '#ef4444' }}>שגיאה בטעינה</p>
+            <p className="text-xs font-mono rounded-xl p-3 w-full text-right" style={{ background: '#fef2f2', color: '#991b1b', wordBreak: 'break-all' }}>{error}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 font-bold" style={{ color: '#38bdf8' }}>אין נערים</div>
