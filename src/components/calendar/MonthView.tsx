@@ -173,6 +173,9 @@ export default function MonthView({ year, month, activities, onActivityClick, on
                     const dayActivities = activitiesForDay(singleDayActivities, day);
                     const isToday = isTodayDate(day);
                     const isCurrentMonth = day.getMonth() === month;
+                    const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+                    const dayMidnight = new Date(day); dayMidnight.setHours(0,0,0,0);
+                    const isPast = isCurrentMonth && !isToday && dayMidnight < todayMidnight;
                     const visible = dayActivities.slice(0, 3);
                     const extra = dayActivities.length - 3;
                     const hasActivities = dayActivities.length > 0;
@@ -195,21 +198,25 @@ export default function MonthView({ year, month, activities, onActivityClick, on
                           transition: 'background 0.15s',
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 2 }}>
                           <span
                             style={{
                               width: 22, height: 22,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               borderRadius: '50%',
-                              fontSize: 11, fontWeight: 900, flexShrink: 0,
-                              background: isToday ? 'linear-gradient(135deg,#0284c7,#06b6d4)' : 'transparent',
-                              color: isToday ? 'white' : '#0369a1',
+                              fontSize: isPast ? 9 : 11, fontWeight: 900, flexShrink: 0,
+                              position: 'relative',
+                              background: isToday ? 'linear-gradient(135deg,#0284c7,#06b6d4)' : isPast ? '#dcfce7' : 'transparent',
+                              color: isToday ? 'white' : isPast ? '#15803d' : '#0369a1',
                               boxShadow: isToday ? '0 2px 8px rgba(2,132,199,0.5)' : 'none',
-                              border: isToday ? 'none' : '1.5px solid #e0f2fe',
+                              border: isToday ? 'none' : isPast ? '1.5px solid #86efac' : '1.5px solid #e0f2fe',
                             }}
                           >
-                            {day.getDate()}
+                            {isPast ? '✓' : day.getDate()}
                           </span>
+                          {isToday && (
+                            <span style={{ fontSize: 7, fontWeight: 900, color: '#0284c7', lineHeight: 1, marginTop: 1 }}>היום</span>
+                          )}
                         </div>
 
                         {hasActivities ? (
