@@ -206,15 +206,15 @@ export default function MonthView({ year, month, activities, onActivityClick, on
                               width: 22, height: 22,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               borderRadius: '50%',
-                              fontSize: isPast ? 9 : 11, fontWeight: 900, flexShrink: 0,
+                              fontSize: 11, fontWeight: 900, flexShrink: 0,
                               position: 'relative',
-                              background: isToday ? 'linear-gradient(135deg,#0284c7,#06b6d4)' : isPast ? '#dcfce7' : 'transparent',
-                              color: isToday ? 'white' : isPast ? '#15803d' : '#0369a1',
+                              background: isToday ? 'linear-gradient(135deg,#0284c7,#06b6d4)' : isGreenDay ? '#dcfce7' : 'transparent',
+                              color: isToday ? 'white' : isGreenDay ? '#15803d' : '#0369a1',
                               boxShadow: isToday ? '0 2px 8px rgba(2,132,199,0.5)' : 'none',
-                              border: isToday ? 'none' : isPast ? '1.5px solid #86efac' : '1.5px solid #e0f2fe',
+                              border: isToday ? 'none' : isGreenDay ? '1.5px solid #86efac' : '1.5px solid #e0f2fe',
                             }}
                           >
-                            {isPast ? '✓' : day.getDate()}
+                            {isGreenDay ? '✓' : day.getDate()}
                           </span>
                           {isToday && (
                             <span style={{ fontSize: 7, fontWeight: 900, color: '#0284c7', lineHeight: 1, marginTop: 1 }}>היום</span>
