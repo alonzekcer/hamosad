@@ -14,7 +14,8 @@ body {
   color: #0c4a6e;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 input, textarea, select { font-family: inherit; direction: rtl; }

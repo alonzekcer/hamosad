@@ -21,12 +21,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl" className="h-full" style={{ colorScheme: 'light' }}>
+    <html lang="he" dir="rtl" style={{ colorScheme: 'light', height: '100dvh', overflow: 'hidden' }}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="h-full" style={{ fontFamily: "'Heebo', sans-serif" }}>
+      <body className="h-full overflow-hidden" style={{ fontFamily: "'Heebo', sans-serif" }}>
         <div className="h-full flex flex-col">
           {children}
         </div>
